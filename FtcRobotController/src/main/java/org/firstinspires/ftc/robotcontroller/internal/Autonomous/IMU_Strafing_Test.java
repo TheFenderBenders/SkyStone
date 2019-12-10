@@ -58,9 +58,10 @@ public class IMU_Strafing_Test extends LinearOpMode {
     private DcMotor front_right = null;
     private DcMotor back_left = null;
     private DcMotor back_right = null;
+
     BNO055IMU imu;
-    Orientation             lastAngles = new Orientation();
-    double                  globalAngle, power = .30, correction;
+    Orientation lastAngles = new Orientation();
+    double globalAngle, power = .30, correction;
 
     @Override
     public void runOpMode() {

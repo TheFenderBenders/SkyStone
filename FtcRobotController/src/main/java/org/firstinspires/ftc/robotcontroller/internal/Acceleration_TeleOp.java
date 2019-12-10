@@ -29,7 +29,6 @@
 
 package org.firstinspires.ftc.robotcontroller.internal;
 
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -51,41 +50,59 @@ import com.qualcomm.robotcore.util.Range;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@TeleOp(name="Master", group ="Concept")
+@TeleOp(name="Basic: Accel OpMode", group="Linear Opmode")
 
-public class Master_Class extends LinearOpMode {
+public class Acceleration_TeleOp extends LinearOpMode {
 
-    public boolean dir = false;
-
-
-
-
-
-    public class Child extends Master_Class{
-       dir = false;
-    }
+    // Declare OpMode members.
+    private ElapsedTime runtime = new ElapsedTime();
+    DcMotor mainMotor= null;
 
     @Override
     public void runOpMode() {
+        telemetry.addData("Status", "Initialized");
+        telemetry.update();
 
-        waitForStart();
-        while(opModeIsActive()) {
-
-            if(dir){
-                telemetry.addLine("RIGHT");
-            }
-            else
-                telemetry.addLine("LEFT");
-
-            telemetry.addData("Status", "Initialized");
-            telemetry.update();
-        }
+        // Initialize the hardware variables. Note that the strings used here as parameters
+        // to 'get' must correspond to the names assigned during the robot configuration
+        // step (using the FTC Robot Controller app on the phone).
+        mainMotor = hardwareMap.get(DcMotor.class,"motor");
 
         // Wait for the game to start (driver presses PLAY)
 
+        double targetSpeed = 0;
+        double power = 0;
 
+        waitForStart();
+        runtime.reset();
 
         // run until the end of the match (driver presses STOP)
 
+
+        while (opModeIsActive()) {
+
+            if(Math.abs(gamepad1.left_stick_y)>targetSpeed) {
+                targetSpeed = gamepad1.left_stick_y;
+                power = 0.01*targetSpeed;
+            }
+
+            if(Math.abs(mainMotor.getPower())<Math.abs(targetSpeed)){
+                power *= Math.abs(targetSpeed)/(targetSpeed*1.01);
+            }
+
+            if(gamepad1.left_stick_y == 0){
+                power = 0;
+                targetSpeed = 0;
+            }
+            mainMotor.setPower(power);
+            telemetry.addData("Power", power);
+            telemetry.addData("Target", targetSpeed);
+            telemetry.addData("Gamepad", gamepad1.left_stick_y);
+            telemetry.addData("Motor", mainMotor.getPower());
+
+
+
+            telemetry.update();
+        }
     }
 }
