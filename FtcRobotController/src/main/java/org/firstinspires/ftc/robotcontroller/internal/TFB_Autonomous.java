@@ -82,7 +82,7 @@ public class TFB_Autonomous extends TFB_OpMode {
         BACK_OUT,
         TURN_TOWARD_BRIDGE,
         STRAFE_BASED_ON_PARKING_POSITION,
-        MOVE_UNTIL_BRIDGE,
+        MOVE_TO_BRIDGE,
         DROP_OFF_SKYSTONE,
     }
 
@@ -231,6 +231,7 @@ public class TFB_Autonomous extends TFB_OpMode {
 
                         if (runtime.milliseconds() < 4000) {
                             // move forward for 4 seconds
+                            moveByGyro(0, 0.2);
 
                         }
                         else {
@@ -277,8 +278,8 @@ public class TFB_Autonomous extends TFB_OpMode {
                             runtime.reset();
                         }
                         else {
-                            //correctionStrafe(90,0.225);
-                            correctionStrafe(90,0.25);
+                            //moveByGyro(90,0.225);
+                            moveByGyro(90,0.25);
                             telemetry.addData("Skystone NOT visible", "none");
                         }
                         telemetry.update();
@@ -302,13 +303,9 @@ public class TFB_Autonomous extends TFB_OpMode {
                     case STRAFE_BASED_ON_PARKING_POSITION:
 
                         break;
-                    case MOVE_UNTIL_BRIDGE:
+                    case MOVE_TO_BRIDGE:
 
-
-
-
-
-
+                        moveToBridge(0, 0.2);
                         break;
 
                     case DROP_OFF_SKYSTONE:
@@ -340,24 +337,8 @@ public class TFB_Autonomous extends TFB_OpMode {
                         break;
                     case MOVE_TO_BRIDGE:
 
-                        int red = colorSensor.red();
-                        int green = colorSensor.green();
-                        int blue = colorSensor.blue();
-
-                        if((blue>red)&&(blue>green)){
-                            telemetry.addLine("Blue Object Detected");
-                            cutPower();
-                            state = STATES.DONE;
-                        }
-                        else if((red>blue)&&(red>green)){
-                            telemetry.addLine("Red Object Detected");
-                            cutPower();
-                            state = STATES.DONE;
-                        }
-                        else{
-                            correctionStrafe(0,0.2);
-                        }
-
+                        moveToBridge(0, 0.2);
+                        state = STATES.DONE;
                         break;
                 }
 
@@ -365,6 +346,8 @@ public class TFB_Autonomous extends TFB_OpMode {
 
             case DONE:
 
+                telemetry.addData("Status", "Done");
+                telemetry.update();
                 break;
 
         }
@@ -450,7 +433,7 @@ public class TFB_Autonomous extends TFB_OpMode {
     }
 
 
-    void correctionStrafe(double angle, double speed){
+    void moveByGyro(double angle, double speed){
         /*
 
         0 = 45
@@ -467,6 +450,29 @@ public class TFB_Autonomous extends TFB_OpMode {
         backLeft.setPower(v2*speed);
         frontRight.setPower(v3*speed);
         frontLeft.setPower(v4*speed);
+    }
+
+    // moves in specified direction with the appropriate power till either red or blue gaffer tapes are seen.
+    void moveToBridge(double angle, double speed) {
+        int red = colorSensor.red();
+        int green = colorSensor.green();
+        int blue = colorSensor.blue();
+
+        if((blue>red)&&(blue>green)){
+            telemetry.addLine("Blue Object Detected");
+            cutPower();
+            state = STATES.DONE;
+        }
+        else if((red>blue)&&(red>green)){
+            telemetry.addLine("Red Object Detected");
+            cutPower();
+            state = STATES.DONE;
+        }
+        else{
+            moveByGyro(angle, speed);
+        }
+
+
     }
 
 

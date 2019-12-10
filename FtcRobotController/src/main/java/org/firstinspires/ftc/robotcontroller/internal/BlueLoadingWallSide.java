@@ -12,9 +12,9 @@ public class BlueLoadingWallSide extends TFB_Autonomous {
         starting_position = STARTING_POSITION.LOADING_ZONE;
         alliance = ALLIANCE.BLUE;
         under_bridge_position = UNDER_BRIDGE_POSITION.WALL_SIDE;
-//        state = STATES.FETCH_AND_DELIVER_SKYSTONE;
-//        skystone_state = SKYSTONE_STATES.MOVE_TOWARD_SKYSTONE;
 
+        //        state = STATES.FETCH_AND_DELIVER_SKYSTONE;
+        //        skystone_state = SKYSTONE_STATES.MOVE_TOWARD_SKYSTONE;
         state = STATES.PARK_UNDER_BRIDGE;
         park_state = PARK_STATES.MOVE_TO_BRIDGE;
     }

@@ -92,9 +92,6 @@ public  class TFB_OpMode extends OpMode
         telemetry.addData("Status", "Initializing...");
         telemetry.update();
 
-        // Initialize the hardware variables. Note that the strings used here as parameters
-        // to 'get' must correspond to the names assigned during the robot configuration
-        // step (using the FTC Robot Controller app on the phone).
         frontLeft  = hardwareMap.get(DcMotor.class, "front_left");
         frontRight = hardwareMap.get(DcMotor.class, "front_right");
         backLeft  = hardwareMap.get(DcMotor.class, "back_left");
@@ -102,8 +99,6 @@ public  class TFB_OpMode extends OpMode
 
         colorSensor = hardwareMap.get(ColorSensor.class, "color_sensor");
 
-        // Most robots need the motor on one side to be reversed to drive forward
-        // Reverse the motor that runs backwards when connected directly to the battery
         frontLeft.setDirection(DcMotor.Direction.REVERSE);
         backLeft.setDirection(DcMotor.Direction.REVERSE);
 
@@ -111,7 +106,6 @@ public  class TFB_OpMode extends OpMode
         frontRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         backLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         backRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
 
     }
 
