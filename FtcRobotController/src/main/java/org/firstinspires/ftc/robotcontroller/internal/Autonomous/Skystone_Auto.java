@@ -224,9 +224,9 @@ public class Skystone_Auto extends LinearOpMode {
 
 
 
-        //VuforiaLocalizer.Parameters vuparameters = new VuforiaLocalizer.Parameters(cameraMonitorViewId);
+        VuforiaLocalizer.Parameters vuparameters = new VuforiaLocalizer.Parameters(cameraMonitorViewId);
 
-        VuforiaLocalizer.Parameters vuparameters = new VuforiaLocalizer.Parameters();
+        //VuforiaLocalizer.Parameters vuparameters = new VuforiaLocalizer.Parameters();
 
         vuparameters.vuforiaLicenseKey = VUFORIA_KEY;
         vuparameters.cameraDirection   = CAMERA_CHOICE;

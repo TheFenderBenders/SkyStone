@@ -116,6 +116,8 @@ public class TFB_Autonomous extends TFB_OpMode {
     protected float phoneZRotate    = 0;
     protected OpenGLMatrix robotLocationTransform;
     protected int cameraMonitorViewId;
+    protected BNO055IMU.Parameters imuparameters;
+    protected boolean IMU_initialized = false;
 
     @Override
     public void init() {
@@ -142,68 +144,70 @@ public class TFB_Autonomous extends TFB_OpMode {
         super.init();
 
 
-        // IMU Initialization
-        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+        VuforiaLocalizer.Parameters vuparameters = new VuforiaLocalizer.Parameters(cameraMonitorViewId);
 
-        parameters.mode                = BNO055IMU.SensorMode.IMU;
-        parameters.angleUnit           = BNO055IMU.AngleUnit.DEGREES;
-        parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-        parameters.loggingEnabled      = false;
+        // VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
 
-        // Retrieve and initialize the IMU. We expect the IMU to be attached to an I2C port
-        // on a Core Device Interface Module, configured to be a sensor of type "AdaFruit IMU",
-        // and named "imu".
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        vuparameters.vuforiaLicenseKey = VUFORIA_KEY;
+        vuparameters.cameraDirection   = CAMERA_CHOICE;
 
-        imu.initialize(parameters);
+        //  Instantiate the Vuforia engine
+        vuforia = ClassFactory.getInstance().createVuforia(vuparameters);
 
-        byte AXIS_MAP_CONFIG_BYTE = 0x6; //This is what to write to the AXIS_MAP_CONFIG register to swap x and z axes
-        byte AXIS_MAP_SIGN_BYTE = 0x1; //This is what to write to the AXIS_MAP_SIGN register to negate the z axis
+        // Load the data sets for the trackable objects. These particular data
+        // sets are stored in the 'assets' part of our application.
+        VuforiaTrackables targetsSkyStone = this.vuforia.loadTrackablesFromAsset("Skystone");
 
-        //Need to be in CONFIG mode to write to registers
-        imu.write8(BNO055IMU.Register.OPR_MODE,BNO055IMU.SensorMode.CONFIG.bVal & 0x0F);
+        VuforiaTrackable stoneTarget = targetsSkyStone.get(0);
+        stoneTarget.setName("Stone Target");
 
-        try {
-            Thread.sleep(100); //Changing modes requires a delay before doing anything else
-        } catch (InterruptedException e) {
-            telemetry.addLine("Sleep exception");
-            telemetry.update();
+        // For convenience, gather together all the trackable objects in one easily-iterable collection */
+        List<VuforiaTrackable> allTrackables = new ArrayList<VuforiaTrackable>();
+        allTrackables.addAll(targetsSkyStone);
+
+        stoneTarget.setLocation(OpenGLMatrix
+                .translation(0, 0, stoneZ)
+                .multiplied(Orientation.getRotationMatrix(EXTRINSIC, XYZ, DEGREES, 90, 0, -90)));
+
+        if (CAMERA_CHOICE == BACK) {
+            phoneYRotate = -90;
+        } else {
+            phoneYRotate = 90;
         }
 
-        //Write to the AXIS_MAP_CONFIG register
-        imu.write8(BNO055IMU.Register.AXIS_MAP_CONFIG,AXIS_MAP_CONFIG_BYTE & 0x0F);
-
-        //Write to the AXIS_MAP_SIGN register
-        imu.write8(BNO055IMU.Register.AXIS_MAP_SIGN,AXIS_MAP_SIGN_BYTE & 0x0F);
-
-        //Need to change back into the IMU mode to use the gyro
-        imu.write8(BNO055IMU.Register.OPR_MODE,BNO055IMU.SensorMode.IMU.bVal & 0x0F);
-
-        try {
-            Thread.sleep(100); //Changing modes again requires a delay
-        } catch (InterruptedException e) {
-            telemetry.addLine("Sleep exception");
-            telemetry.update();
+        // Rotate the phone vertical about the X axis if it's in portrait mode
+        if (PHONE_IS_PORTRAIT) {
+            phoneXRotate = 90 ;
         }
 
-        telemetry.addData("Status", "Calibrating IMU...");
+        // Next, translate the camera lens to where it is on the robot.
+        // In this example, it is centered (left to right), but forward of the middle of the robot, and above ground level.
+        final float CAMERA_FORWARD_DISPLACEMENT  = 4.0f * mmPerInch;   // eg: Camera is 4 Inches in front of robot center
+        final float CAMERA_VERTICAL_DISPLACEMENT = 8.0f * mmPerInch;   // eg: Camera is 8 Inches above ground
+        final float CAMERA_LEFT_DISPLACEMENT     = 0;     // eg: Camera is ON the robot's center line
+
+        OpenGLMatrix robotFromCamera = OpenGLMatrix
+                .translation(CAMERA_FORWARD_DISPLACEMENT, CAMERA_LEFT_DISPLACEMENT, CAMERA_VERTICAL_DISPLACEMENT)
+                .multiplied(Orientation.getRotationMatrix(EXTRINSIC, YZX, DEGREES, phoneYRotate, phoneZRotate, phoneXRotate));
+
+        /**  Let all the trackable listeners know where the phone is.  */
+        for (VuforiaTrackable trackable : allTrackables) {
+            ((VuforiaTrackableDefaultListener) trackable.getListener()).setPhoneInformation(robotFromCamera, vuparameters.cameraDirection);
+        }
+
+        telemetry.addData("Status", "Vuforia Init done");
+        telemetry.addLine("Calibrating IMU");
         telemetry.update();
 
-        // make sure the imu gyro is calibrated before continuing.
-        try {
-            while (!imu.isGyroCalibrated())
-            {
-                Thread.sleep(50);
-            }
-        } catch (InterruptedException e) {
-            telemetry.addLine("Sleep exception");
-            telemetry.update();
-        }
+        Thread t1 = new Thread(new IMULoader());
+        t1.start();
 
-        telemetry.addData("imu calib status", imu.getCalibrationStatus().toString());
+/*        telemetry.addData("imu calib status", imu.getCalibrationStatus().toString());
         telemetry.addData("Status", "Initialized");
         telemetry.update();
 
+ */
     }
 
     @Override
@@ -220,6 +224,18 @@ public class TFB_Autonomous extends TFB_OpMode {
 
     @Override
     public void loop() {
+
+        telemetry.update();
+        if (!IMU_initialized) {
+            telemetry.addLine("IMU not initialized...PLEASE WAIT!");
+            telemetry.update();
+            return;
+        }
+
+        telemetry.addData("imu calib status", imu.getCalibrationStatus().toString());
+        telemetry.addLine("IMU initialized!");
+        telemetry.update();
+
         switch (state) {
             case FETCH_AND_DELIVER_SKYSTONE:
 
@@ -241,7 +257,7 @@ public class TFB_Autonomous extends TFB_OpMode {
                         break;
 
                     case STRAFE_UNTIL_SKYSTONE:
-/*
+
                         // check all the trackable targets to see which one (if any) is visible.
                         targetVisible = false;
                         for (VuforiaTrackable trackable : allTrackables) {
@@ -284,7 +300,7 @@ public class TFB_Autonomous extends TFB_OpMode {
                         }
                         telemetry.update();
 
- */
+
 
                         break;
                     case MOVE_TOWARD_SKYSTONE:
@@ -473,6 +489,66 @@ public class TFB_Autonomous extends TFB_OpMode {
         }
 
 
+    }
+
+    class IMULoader implements Runnable {
+        public void run() {
+            // IMU Initialization
+            imuparameters = new BNO055IMU.Parameters();
+
+            imuparameters.mode                = BNO055IMU.SensorMode.IMU;
+            imuparameters.angleUnit           = BNO055IMU.AngleUnit.DEGREES;
+            imuparameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+            imuparameters.loggingEnabled      = false;
+
+            // Retrieve and initialize the IMU. We expect the IMU to be attached to an I2C port
+            // on a Core Device Interface Module, configured to be a sensor of type "AdaFruit IMU",
+            // and named "imu".
+            imu = hardwareMap.get(BNO055IMU.class, "imu");
+
+            imu.initialize(imuparameters);
+
+            byte AXIS_MAP_CONFIG_BYTE = 0x6; //This is what to write to the AXIS_MAP_CONFIG register to swap x and z axes
+            byte AXIS_MAP_SIGN_BYTE = 0x1; //This is what to write to the AXIS_MAP_SIGN register to negate the z axis
+
+            //Need to be in CONFIG mode to write to registers
+            imu.write8(BNO055IMU.Register.OPR_MODE,BNO055IMU.SensorMode.CONFIG.bVal & 0x0F);
+
+            try {
+                Thread.sleep(100); //Changing modes requires a delay before doing anything else
+            } catch (InterruptedException e) {
+                telemetry.addLine("Sleep exception");
+                telemetry.update();
+            }
+
+            //Write to the AXIS_MAP_CONFIG register
+            imu.write8(BNO055IMU.Register.AXIS_MAP_CONFIG,AXIS_MAP_CONFIG_BYTE & 0x0F);
+
+            //Write to the AXIS_MAP_SIGN register
+            imu.write8(BNO055IMU.Register.AXIS_MAP_SIGN,AXIS_MAP_SIGN_BYTE & 0x0F);
+
+            //Need to change back into the IMU mode to use the gyro
+            imu.write8(BNO055IMU.Register.OPR_MODE,BNO055IMU.SensorMode.IMU.bVal & 0x0F);
+
+            try {
+                Thread.sleep(100); //Changing modes again requires a delay
+            } catch (InterruptedException e) {
+                telemetry.addLine("Sleep exception");
+                telemetry.update();
+            }
+
+            // make sure the imu gyro is calibrated before continuing.
+            try {
+                while (!imu.isGyroCalibrated())
+                {
+                    Thread.sleep(50);
+                }
+            } catch (InterruptedException e) {
+                telemetry.addLine("Sleep exception");
+                telemetry.update();
+            }
+            IMU_initialized = true;
+        }
     }
 
 
