@@ -32,6 +32,8 @@ package org.firstinspires.ftc.robotcontroller.internal;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -91,7 +93,6 @@ public  class TFB_OpMode extends OpMode
     public void init() {
         telemetry.addData("Status", "Initializing...");
         telemetry.update();
-
         frontLeft  = hardwareMap.get(DcMotor.class, "front_left");
         frontRight = hardwareMap.get(DcMotor.class, "front_right");
         backLeft  = hardwareMap.get(DcMotor.class, "back_left");

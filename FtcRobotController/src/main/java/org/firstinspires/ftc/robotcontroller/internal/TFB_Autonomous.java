@@ -143,10 +143,13 @@ public class TFB_Autonomous extends TFB_OpMode {
 
         super.init();
 
+        // start off IMU initialization on a background thread
+        Thread t1 = new Thread(new IMULoader());
+        t1.start();
 
+        // initialize Vuforia
         cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         VuforiaLocalizer.Parameters vuparameters = new VuforiaLocalizer.Parameters(cameraMonitorViewId);
-
         // VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
 
         vuparameters.vuforiaLicenseKey = VUFORIA_KEY;
@@ -157,13 +160,12 @@ public class TFB_Autonomous extends TFB_OpMode {
 
         // Load the data sets for the trackable objects. These particular data
         // sets are stored in the 'assets' part of our application.
-        VuforiaTrackables targetsSkyStone = this.vuforia.loadTrackablesFromAsset("Skystone");
-
-        VuforiaTrackable stoneTarget = targetsSkyStone.get(0);
+        targetsSkyStone = this.vuforia.loadTrackablesFromAsset("Skystone");
+        stoneTarget = targetsSkyStone.get(0);
         stoneTarget.setName("Stone Target");
 
         // For convenience, gather together all the trackable objects in one easily-iterable collection */
-        List<VuforiaTrackable> allTrackables = new ArrayList<VuforiaTrackable>();
+        allTrackables = new ArrayList<VuforiaTrackable>();
         allTrackables.addAll(targetsSkyStone);
 
         stoneTarget.setLocation(OpenGLMatrix
@@ -183,9 +185,9 @@ public class TFB_Autonomous extends TFB_OpMode {
 
         // Next, translate the camera lens to where it is on the robot.
         // In this example, it is centered (left to right), but forward of the middle of the robot, and above ground level.
-        final float CAMERA_FORWARD_DISPLACEMENT  = 4.0f * mmPerInch;   // eg: Camera is 4 Inches in front of robot center
-        final float CAMERA_VERTICAL_DISPLACEMENT = 8.0f * mmPerInch;   // eg: Camera is 8 Inches above ground
-        final float CAMERA_LEFT_DISPLACEMENT     = 0;     // eg: Camera is ON the robot's center line
+        final float CAMERA_FORWARD_DISPLACEMENT  = 6.0f * mmPerInch;
+        final float CAMERA_VERTICAL_DISPLACEMENT = 2.0f * mmPerInch;   // eg: Camera is 2 Inches above ground
+        final float CAMERA_LEFT_DISPLACEMENT     = 2;
 
         OpenGLMatrix robotFromCamera = OpenGLMatrix
                 .translation(CAMERA_FORWARD_DISPLACEMENT, CAMERA_LEFT_DISPLACEMENT, CAMERA_VERTICAL_DISPLACEMENT)
@@ -196,12 +198,8 @@ public class TFB_Autonomous extends TFB_OpMode {
             ((VuforiaTrackableDefaultListener) trackable.getListener()).setPhoneInformation(robotFromCamera, vuparameters.cameraDirection);
         }
 
-        telemetry.addData("Status", "Vuforia Init done");
-        telemetry.addLine("Calibrating IMU");
+        telemetry.addData("Status", "Hit Play to Start.");
         telemetry.update();
-
-        Thread t1 = new Thread(new IMULoader());
-        t1.start();
 
 /*        telemetry.addData("imu calib status", imu.getCalibrationStatus().toString());
         telemetry.addData("Status", "Initialized");
@@ -218,23 +216,18 @@ public class TFB_Autonomous extends TFB_OpMode {
     @Override
     public void start() {
         super.start();
-        //targetsSkyStone.activate();
+
+        while (!imu.isGyroCalibrated()) {
+            telemetry.addLine("IMU not initialized...PLEASE WAIT!");
+            telemetry.update();
+            return;
+        }
+        targetsSkyStone.activate();
         runtime.reset();
     }
 
     @Override
     public void loop() {
-
-        telemetry.update();
-        if (!IMU_initialized) {
-            telemetry.addLine("IMU not initialized...PLEASE WAIT!");
-            telemetry.update();
-            return;
-        }
-
-        telemetry.addData("imu calib status", imu.getCalibrationStatus().toString());
-        telemetry.addLine("IMU initialized!");
-        telemetry.update();
 
         switch (state) {
             case FETCH_AND_DELIVER_SKYSTONE:
@@ -300,12 +293,45 @@ public class TFB_Autonomous extends TFB_OpMode {
                         }
                         telemetry.update();
 
-
-
                         break;
                     case MOVE_TOWARD_SKYSTONE:
+                        VectorF translation = null;
+                        for (VuforiaTrackable trackable : allTrackables) {
+                            if (((VuforiaTrackableDefaultListener) trackable.getListener()).isVisible()) {
+                                telemetry.addData("Visible Target", trackable.getName());
 
-                        break;
+
+                                // getUpdatedRobotLocation() will return null if no new information is available since
+                                // the last time that call was made, or if the trackable is not currently visible.
+                                robotLocationTransform = ((VuforiaTrackableDefaultListener) trackable.getListener()).getUpdatedRobotLocation();
+                                if (robotLocationTransform != null) {
+                                    lastLocation = robotLocationTransform;
+                                }
+                                 translation = lastLocation.getTranslation();
+
+                            }
+
+
+                        }
+
+                        /*
+                        *   get 1 = x
+                        *
+                        *
+                         */
+                        if(translation != null){
+                            if(translation.get(1)>10*(mmPerInch)){
+                                moveByGyro(-90,0.2);
+                            }
+                            else if(translation.get(1)<10*(mmPerInch)){
+                                moveByGyro(90,0.2);
+                            }
+                        }
+
+
+
+
+                                break;
                     case CAPTURE_SKYSTONE:
 
                         break;
@@ -493,6 +519,9 @@ public class TFB_Autonomous extends TFB_OpMode {
 
     class IMULoader implements Runnable {
         public void run() {
+            telemetry.addLine("THREAD STARTED");
+            telemetry.update();
+
             // IMU Initialization
             imuparameters = new BNO055IMU.Parameters();
 
