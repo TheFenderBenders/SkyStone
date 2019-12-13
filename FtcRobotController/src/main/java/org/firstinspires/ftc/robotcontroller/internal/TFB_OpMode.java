@@ -38,6 +38,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 import com.vuforia.CameraDevice;
@@ -86,6 +87,7 @@ public  class TFB_OpMode extends OpMode
     protected DcMotor backLeft = null;
     protected DcMotor backRight = null;
     protected ColorSensor colorSensor = null;
+    protected Servo skystoneCaptureServo;
     /*
      * Code to run ONCE when the driver hits INIT
      */
@@ -99,6 +101,9 @@ public  class TFB_OpMode extends OpMode
         backRight = hardwareMap.get(DcMotor.class, "back_right");
 
         colorSensor = hardwareMap.get(ColorSensor.class, "color_sensor");
+
+        skystoneCaptureServo = hardwareMap.get(Servo.class, "skystone");
+        skystoneCaptureServo.setPosition(0);
 
         frontLeft.setDirection(DcMotor.Direction.REVERSE);
         backLeft.setDirection(DcMotor.Direction.REVERSE);

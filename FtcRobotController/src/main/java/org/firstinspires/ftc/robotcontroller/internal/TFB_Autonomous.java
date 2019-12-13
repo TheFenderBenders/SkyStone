@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.robotcontroller.internal;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.vuforia.CameraDevice;
 
 import org.firstinspires.ftc.robotcontroller.internal.Autonomous.Skystone_Auto;
@@ -19,6 +20,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.lang.Thread.sleep;
 import static org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.DEGREES;
 import static org.firstinspires.ftc.robotcore.external.navigation.AxesOrder.XYZ;
 import static org.firstinspires.ftc.robotcore.external.navigation.AxesOrder.YZX;
@@ -37,6 +39,7 @@ public class TFB_Autonomous extends TFB_OpMode {
         LEFT, RIGHT
     }
     DIRECTION dir;
+    DIRECTION strafe_dir;
 
 
     enum STARTING_POSITION {
@@ -78,12 +81,15 @@ public class TFB_Autonomous extends TFB_OpMode {
         MOVE_TOWARD_STONE_LINE,
         STRAFE_UNTIL_SKYSTONE,
         MOVE_TOWARD_SKYSTONE,
+        ALIGN_WITH_SKYSTONE,
         CAPTURE_SKYSTONE,
+        APPROACH_SKYSTONE,
         BACK_OUT,
         TURN_TOWARD_BRIDGE,
         STRAFE_BASED_ON_PARKING_POSITION,
         MOVE_TO_BRIDGE,
         DROP_OFF_SKYSTONE,
+        DEBUG,
     }
 
     enum FOUNDATION_STATES {
@@ -118,7 +124,8 @@ public class TFB_Autonomous extends TFB_OpMode {
     protected int cameraMonitorViewId;
     protected BNO055IMU.Parameters imuparameters;
     protected boolean IMU_initialized = false;
-
+    protected ElapsedTime dutyCycleTime = new ElapsedTime();
+    protected int iterations = 0;
     @Override
     public void init() {
 
@@ -132,7 +139,7 @@ public class TFB_Autonomous extends TFB_OpMode {
             telemetry.addLine(Error);
             telemetry.update();
             try {
-                Thread.sleep(5000);
+                sleep(5000);
             } catch (InterruptedException e) {
                 telemetry.addLine("Sleep exception");
                 telemetry.update();
@@ -142,6 +149,8 @@ public class TFB_Autonomous extends TFB_OpMode {
         }
 
         super.init();
+
+        skystoneCaptureServo.setPosition(0);
 
         // start off IMU initialization on a background thread
         Thread t1 = new Thread(new IMULoader());
@@ -185,9 +194,9 @@ public class TFB_Autonomous extends TFB_OpMode {
 
         // Next, translate the camera lens to where it is on the robot.
         // In this example, it is centered (left to right), but forward of the middle of the robot, and above ground level.
-        final float CAMERA_FORWARD_DISPLACEMENT  = 6.0f * mmPerInch;
-        final float CAMERA_VERTICAL_DISPLACEMENT = 2.0f * mmPerInch;   // eg: Camera is 2 Inches above ground
-        final float CAMERA_LEFT_DISPLACEMENT     = 2;
+        final float CAMERA_FORWARD_DISPLACEMENT  = 5.5f * mmPerInch;
+        final float CAMERA_VERTICAL_DISPLACEMENT = 2.5f * mmPerInch;   // eg: Camera is 2 Inches above ground
+        final float CAMERA_LEFT_DISPLACEMENT     = 1.5f;
 
         OpenGLMatrix robotFromCamera = OpenGLMatrix
                 .translation(CAMERA_FORWARD_DISPLACEMENT, CAMERA_LEFT_DISPLACEMENT, CAMERA_VERTICAL_DISPLACEMENT)
@@ -197,6 +206,8 @@ public class TFB_Autonomous extends TFB_OpMode {
         for (VuforiaTrackable trackable : allTrackables) {
             ((VuforiaTrackableDefaultListener) trackable.getListener()).setPhoneInformation(robotFromCamera, vuparameters.cameraDirection);
         }
+
+//        CameraDevice.getInstance().setFlashTorchMode(true);
 
         telemetry.addData("Status", "Hit Play to Start.");
         telemetry.update();
@@ -224,6 +235,7 @@ public class TFB_Autonomous extends TFB_OpMode {
         }
         targetsSkyStone.activate();
         runtime.reset();
+        dutyCycleTime.reset();
     }
 
     @Override
@@ -233,15 +245,18 @@ public class TFB_Autonomous extends TFB_OpMode {
             case FETCH_AND_DELIVER_SKYSTONE:
 
                 switch (skystone_state) {
+
+                    case DEBUG:
+
+
+                        break;
                     case MOVE_TOWARD_STONE_LINE:
                         correction = checkDirection();
                         telemetry.addData("IMU Correction", correction);
                         telemetry.update();
 
-                        if (runtime.milliseconds() < 4000) {
-                            // move forward for 4 seconds
+                        if (runtime.milliseconds() < 2100 ) {
                             moveByGyro(0, 0.2);
-
                         }
                         else {
                             skystone_state = SKYSTONE_STATES.STRAFE_UNTIL_SKYSTONE;
@@ -251,22 +266,47 @@ public class TFB_Autonomous extends TFB_OpMode {
 
                     case STRAFE_UNTIL_SKYSTONE:
 
-                        // check all the trackable targets to see which one (if any) is visible.
-                        targetVisible = false;
-                        for (VuforiaTrackable trackable : allTrackables) {
-                            if (((VuforiaTrackableDefaultListener) trackable.getListener()).isVisible()) {
-                                telemetry.addData("Visible Target", trackable.getName());
-                                targetVisible = true;
-
-                                // getUpdatedRobotLocation() will return null if no new information is available since
-                                // the last time that call was made, or if the trackable is not currently visible.
-                                robotLocationTransform = ((VuforiaTrackableDefaultListener) trackable.getListener()).getUpdatedRobotLocation();
-                                if (robotLocationTransform != null) {
-                                    lastLocation = robotLocationTransform;
-                                }
-                                break;
+                        telemetry.addData("DUTY CYCLE TIME", dutyCycleTime.milliseconds());
+                        telemetry.addData("Iters.", iterations);
+                        telemetry.update();
+                        if(dutyCycleTime.milliseconds()<750){
+                            if (alliance == ALLIANCE.BLUE) {
+                                moveByGyro(90,0.3);
+                            }
+                            else {
+                                moveByGyro(-90,0.3);
                             }
                         }
+                        else {
+                            if(iterations<200) {
+                                cutPower();
+                                for (VuforiaTrackable trackable : allTrackables) {
+                                    if (((VuforiaTrackableDefaultListener) trackable.getListener()).isVisible()) {
+                                        telemetry.addData("Visible Target", trackable.getName());
+                                        targetVisible = true;
+
+                                        // getUpdatedRobotLocation() will return null if no new information is available since
+                                        // the last time that call was made, or if the trackable is not currently visible.
+                                        robotLocationTransform = ((VuforiaTrackableDefaultListener) trackable.getListener()).getUpdatedRobotLocation();
+                                        if (robotLocationTransform != null) {
+                                            lastLocation = robotLocationTransform;
+                                        }
+
+
+                                        break;
+                                    }
+                                }
+
+                                iterations ++;
+                            }
+                            else {
+                                iterations = 0;
+                                dutyCycleTime.reset();
+                            }
+
+
+                        }
+
 
                         // Provide feedback as to where the robot is located (if we know).
                         if (targetVisible) {
@@ -284,12 +324,8 @@ public class TFB_Autonomous extends TFB_OpMode {
                             telemetry.addData("Rot (deg)", "{Roll, Pitch, Heading} = %.0f, %.0f, %.0f", rotation.firstAngle, rotation.secondAngle, rotation.thirdAngle);
                             //SkystonePosition = [translation.get(2), translation.get(1), translation.get(0)];
                             skystone_state = SKYSTONE_STATES.MOVE_TOWARD_SKYSTONE;
+
                             runtime.reset();
-                        }
-                        else {
-                            //moveByGyro(90,0.225);
-                            moveByGyro(90,0.25);
-                            telemetry.addData("Skystone NOT visible", "none");
                         }
                         telemetry.update();
 
@@ -308,36 +344,72 @@ public class TFB_Autonomous extends TFB_OpMode {
                                     lastLocation = robotLocationTransform;
                                 }
                                  translation = lastLocation.getTranslation();
-
                             }
-
-
                         }
 
-                        /*
-                        *   get 1 = x
-                        *
-                        *
-                         */
                         if(translation != null){
-                            if(translation.get(1)>10*(mmPerInch)){
-                                moveByGyro(-90,0.2);
+                            if(translation.get(1)>15/(mmPerInch)){
+                                telemetry.addData("Position", "{0,1,2} = %.1f, %.1f,%.1f", translation.get(0), translation.get(1), translation.get(2));
+                                moveByGyro(90,0.19);
                             }
-                            else if(translation.get(1)<10*(mmPerInch)){
-                                moveByGyro(90,0.2);
+                            else if(translation.get(1)<-15/(mmPerInch)){
+                                moveByGyro(-90,0.19);
+                            }
+                            else {
+                                cutPower();
+                                skystone_state = SKYSTONE_STATES.ALIGN_WITH_SKYSTONE;
+                                runtime.reset();
                             }
                         }
-
-
-
 
                                 break;
+
+
+                    case ALIGN_WITH_SKYSTONE:
+                        if(runtime.milliseconds()<1100){
+                            moveByGyro(-90,0.2);
+                        }
+                        else{
+                            cutPower();
+                            runtime.reset();
+                            skystone_state = SKYSTONE_STATES.APPROACH_SKYSTONE;
+                        }
+
+                        break;
+                    case APPROACH_SKYSTONE:
+                        if(runtime.milliseconds()<1250) {
+                            moveByGyro(0, 0.3);
+
+                        }
+                        else{
+
+                            cutPower();
+                            runtime.reset();
+
+                            //telemetry.addData("Position", "{0,1,2} = %.1f, %.1f,%.1f", translation.get(0), translation.get(1), translation.get(2));
+                            //state = STATES.DONE;
+                            //skystone_state = SKYSTONE_STATES.CAPTURE_SKYSTONE;
+
+                        }
+                        break;
+
                     case CAPTURE_SKYSTONE:
-
+                        skystoneCaptureServo.setPosition(0.3);
+                        skystone_state = SKYSTONE_STATES.BACK_OUT;
+                        runtime.reset();
                         break;
+
                     case BACK_OUT:
-
+                        if (runtime.milliseconds() < 4000) {
+                            moveByGyro(-180, 0.3);
+                        }
+                        else {
+                            //skystone_state = SKYSTONE_STATES.TURN_TOWARD_BRIDGE;
+                            state = STATES.DONE;
+                            runtime.reset();
+                        }
                         break;
+
                     case TURN_TOWARD_BRIDGE:
 
                         break;
@@ -388,6 +460,7 @@ public class TFB_Autonomous extends TFB_OpMode {
 
             case DONE:
 
+                cutPower();
                 telemetry.addData("Status", "Done");
                 telemetry.update();
                 break;
@@ -456,11 +529,16 @@ public class TFB_Autonomous extends TFB_OpMode {
             case LEFT:
                 frontLeft.setPower(-power-correction);
                 frontRight.setPower(power);
-                backLeft.setPower(power-correction);
-                backRight.setPower(-power);
+                backLeft.setPower(power);
+                backRight.setPower(-power+correction);
 
                 break;
             case RIGHT:
+                frontLeft.setPower(power);
+                frontRight.setPower(-power+correction);
+                backLeft.setPower(-power-correction);
+                backRight.setPower(power);
+
                 break;
         }
 
@@ -474,24 +552,41 @@ public class TFB_Autonomous extends TFB_OpMode {
         backRight.setPower(0);
     }
 
-
     void moveByGyro(double angle, double speed){
         /*
 
         0 = 45
          */
-        double inputAngle = (angle*(Math.PI/180))+Math.PI/4;
+
+
+        /*
+
+        fwd = 0
+        right = -90
+        left = 90
+        back = 180
+
+
+         */
+        double inputAngle = (-angle*(Math.PI/180))+Math.PI/4;
         //double rightX = globalAngle/10;
-        double rightX = checkDirection();
+        double rightX = -checkDirection();
+
         double v1 = Math.cos(inputAngle) + rightX;
         double v2 = Math.sin(inputAngle) - rightX;
         double v3 = Math.sin(inputAngle) + rightX;
         double v4 = Math.cos(inputAngle) - rightX;
 
-        backRight.setPower(v1*speed);
-        backLeft.setPower(v2*speed);
-        frontRight.setPower(v3*speed);
-        frontLeft.setPower(v4*speed);
+    /*    double v1 = Math.cos(inputAngle);
+        double v2 = Math.sin(inputAngle);
+        double v3 = Math.sin(inputAngle);
+        double v4 = Math.cos(inputAngle);
+*/
+
+        frontLeft.setPower(v1*speed);
+        frontRight.setPower(v2*speed);
+        backLeft.setPower(v3*speed);
+        backRight.setPower(v4*speed);
     }
 
     // moves in specified direction with the appropriate power till either red or blue gaffer tapes are seen.
@@ -544,7 +639,7 @@ public class TFB_Autonomous extends TFB_OpMode {
             imu.write8(BNO055IMU.Register.OPR_MODE,BNO055IMU.SensorMode.CONFIG.bVal & 0x0F);
 
             try {
-                Thread.sleep(100); //Changing modes requires a delay before doing anything else
+                sleep(100); //Changing modes requires a delay before doing anything else
             } catch (InterruptedException e) {
                 telemetry.addLine("Sleep exception");
                 telemetry.update();
@@ -560,7 +655,7 @@ public class TFB_Autonomous extends TFB_OpMode {
             imu.write8(BNO055IMU.Register.OPR_MODE,BNO055IMU.SensorMode.IMU.bVal & 0x0F);
 
             try {
-                Thread.sleep(100); //Changing modes again requires a delay
+                sleep(100); //Changing modes again requires a delay
             } catch (InterruptedException e) {
                 telemetry.addLine("Sleep exception");
                 telemetry.update();
@@ -570,13 +665,20 @@ public class TFB_Autonomous extends TFB_OpMode {
             try {
                 while (!imu.isGyroCalibrated())
                 {
-                    Thread.sleep(50);
+                    sleep(50);
                 }
             } catch (InterruptedException e) {
                 telemetry.addLine("Sleep exception");
                 telemetry.update();
             }
             IMU_initialized = true;
+        }
+
+        void cutPower(){
+            frontLeft.setPower(0);
+            frontRight.setPower(0);
+            backLeft.setPower(0);
+            backRight.setPower(0);
         }
     }
 
