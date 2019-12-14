@@ -66,7 +66,7 @@ public class LM3_TeleOp_Iterative extends OpMode
     CRServo handServo = null;
     Servo leftFoundServo = null;
     Servo rightFoundServo = null;
-    CRServo skystoneServo = null;
+    Servo skystoneServo = null;
 
 
     @Override
@@ -87,7 +87,7 @@ public class LM3_TeleOp_Iterative extends OpMode
         handServo = hardwareMap.get(CRServo.class, "hand");
         leftFoundServo = hardwareMap.get(Servo.class,"l_foundation");
         rightFoundServo = hardwareMap.get(Servo.class,"r_foundation");
-        skystoneServo = hardwareMap.get(CRServo.class, "skystone");
+        skystoneServo = hardwareMap.get(Servo.class, "skystone");
 
 
 
@@ -123,8 +123,13 @@ public class LM3_TeleOp_Iterative extends OpMode
     public void loop() {
         //GAMEPAD # 2 CONTROLS  This includes The Linear Slide, the Arm, and the Foundation Servos.
 
-        slideServo.setPower(Range.clip(-gamepad2.left_stick_y,-0.5,1));
 
+        if(gamepad2.left_stick_button){
+            slideServo.setPower(Range.clip(-gamepad2.left_stick_y/2,-0.5,0.75));
+        }
+        else{
+            slideServo.setPower(Range.clip(-gamepad2.left_stick_y,-0.5,0.75));
+        }
 
         if(gamepad2.a) {
 
@@ -151,14 +156,12 @@ public class LM3_TeleOp_Iterative extends OpMode
 
 
         if(gamepad1.a){
-            skystoneServo.setPower(0.2);
+            skystoneServo.setPosition(0.35);
         }
         else if(gamepad1.y){
-            skystoneServo.setPower(-0.2);
+            skystoneServo.setPosition(0);
         }
-        else{
-            skystoneServo.setPower(0);
-        }
+
 
         if(gamepad1.right_bumper){
             handServo.setPower(0.5);
@@ -171,8 +174,9 @@ public class LM3_TeleOp_Iterative extends OpMode
         }
 
 
-        double gx = gamepad1.left_stick_x*0.75;
-        double gy = -gamepad1.left_stick_y;
+
+        double gx = -gamepad1.left_stick_x*0.75;
+        double gy = gamepad1.left_stick_y;
         double rx = gamepad1.right_stick_x/2;
 
         double r = Math.hypot(gx, gy);

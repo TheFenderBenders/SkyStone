@@ -88,6 +88,9 @@ public  class TFB_OpMode extends OpMode
     protected DcMotor backRight = null;
     protected ColorSensor colorSensor = null;
     protected Servo skystoneCaptureServo;
+    protected Servo foundationCaptureLeftServo;
+    protected Servo foundationCaptureRightServo;
+
     /*
      * Code to run ONCE when the driver hits INIT
      */
@@ -104,6 +107,12 @@ public  class TFB_OpMode extends OpMode
 
         skystoneCaptureServo = hardwareMap.get(Servo.class, "skystone");
         skystoneCaptureServo.setPosition(0);
+
+        foundationCaptureLeftServo = hardwareMap.get(Servo.class, "l_foundation");
+        foundationCaptureLeftServo.setPosition(0);
+
+        foundationCaptureRightServo = hardwareMap.get(Servo.class, "r_foundation");
+        foundationCaptureRightServo.setPosition(0);
 
         frontLeft.setDirection(DcMotor.Direction.REVERSE);
         backLeft.setDirection(DcMotor.Direction.REVERSE);
