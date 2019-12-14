@@ -125,10 +125,10 @@ public class LM3_TeleOp_Iterative extends OpMode
 
 
         if(gamepad2.left_stick_button){
-            slideServo.setPower(Range.clip(-gamepad2.left_stick_y/2,-0.5,0.75));
+            slideServo.setPower(Range.clip(-gamepad2.left_stick_y,-0.5,0.75));
         }
         else{
-            slideServo.setPower(Range.clip(-gamepad2.left_stick_y,-0.5,0.75));
+            slideServo.setPower(Range.clip(-gamepad2.left_stick_y/4,-0.5,0.75));
         }
 
         if(gamepad2.a) {
@@ -177,7 +177,7 @@ public class LM3_TeleOp_Iterative extends OpMode
 
         double gx = -gamepad1.left_stick_x*0.75;
         double gy = gamepad1.left_stick_y;
-        double rx = gamepad1.right_stick_x/2;
+        double rx = gamepad1.right_stick_x*0.75;
 
         double r = Math.hypot(gx, gy);
         double robotAngle = Math.atan2(gy, gx) - Math.PI / 4;

@@ -134,7 +134,7 @@ public class TFB_Autonomous extends TFB_OpMode {
     protected ElapsedTime dutyCycleOffTime = new ElapsedTime();
     protected int iterations = 0;
     protected int DUTY_CYCLE_ON_TIME=1100;
-    protected int DUTY_CYCLE_OFF_TIME=600;
+    protected int DUTY_CYCLE_OFF_TIME=1100;
     protected boolean foundBridge = false;
     protected boolean neutralBridgeSeek = false;
 
@@ -358,12 +358,12 @@ public class TFB_Autonomous extends TFB_OpMode {
                         }
 
                         if(translation != null){
-                            if(translation.get(1)/mmPerInch < 1.5){
+                            if(translation.get(1)/mmPerInch < 2){
                                 telemetry.addData("Position", "{0,1,2} = %.1f, %.1f,%.1f", translation.get(0)/ mmPerInch, translation.get(1)/ mmPerInch, translation.get(2)/ mmPerInch);
-                                moveByGyro(-90,0.19);
+                                moveByGyro(-90,0.2);
                             }
-                            else if(translation.get(1)/mmPerInch > 3){
-                                moveByGyro(90,0.19);
+                            else if(translation.get(1)/mmPerInch > 4){
+                                moveByGyro(90,0.2);
                             }
                             else {
                                 cutPower();
@@ -388,10 +388,12 @@ public class TFB_Autonomous extends TFB_OpMode {
                         }
 
                         if(translation != null){
-                            if(translation.get(0)/mmPerInch < -11){
-                                moveByGyro(0, 0.2);
+                            if((runtime.milliseconds()<1500)&&(translation.get(0)/mmPerInch< - 11)) {
+
+                                    moveByGyro(0, 0.2);
+
                             }
-                            else {
+                            else{
                                 cutPower();
                                 skystone_state = SKYSTONE_STATES.CAPTURE_SKYSTONE;
                                 dutyCycleOffTime.reset();
@@ -421,7 +423,7 @@ public class TFB_Autonomous extends TFB_OpMode {
                                 }
                             }
                             else if(under_bridge_position == UNDER_BRIDGE_POSITION.NEUTRAL_SIDE) {
-                                if (runtime.milliseconds() < 1500) {
+                                if (runtime.milliseconds() < 1750) {
                                     moveByGyro(-180, 0.2);
                                 } else {
                                     cutPower();
@@ -470,7 +472,7 @@ public class TFB_Autonomous extends TFB_OpMode {
 
                         break;
                     case MOVE_TO_BRIDGE:
-                        moveToBridge(0,0.2);
+                        moveToBridge(0,0.3);
                         if (foundBridge) { // continue
                             runtime.reset();
                             foundBridge = false;
@@ -533,7 +535,7 @@ public class TFB_Autonomous extends TFB_OpMode {
                         }
                         break;
                     case BRING_FOUNDATION_BACK:
-                        if (runtime.milliseconds() < 3000) {
+                        if (runtime.milliseconds() < 6000) {
                             moveByGyro(180, 0.4);
                         }
                         else {
