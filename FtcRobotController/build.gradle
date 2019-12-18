@@ -24,5 +24,9 @@ repositories {
         dirs '../libs'
     }
 }
+dependencies {
+    implementation 'org.openftc:easyopencv:1.3'
+}
+
 
 apply from: 'build.release.gradle'
