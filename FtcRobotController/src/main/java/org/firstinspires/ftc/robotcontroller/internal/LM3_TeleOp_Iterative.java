@@ -175,42 +175,31 @@ public class LM3_TeleOp_Iterative extends OpMode
 
 
 
-        double gx = -gamepad1.left_stick_x*0.75;
+        double gx = -gamepad1.left_stick_x*0.6;
         double gy = gamepad1.left_stick_y;
         double rx = gamepad1.right_stick_x*0.75;
 
         double r = Math.hypot(gx, gy);
-        double robotAngle = Math.atan2(gy, gx) - Math.PI / 4;
-        double rightX = rx;
-        double v1 = r * Math.cos(robotAngle) + rightX;
-        double v2 = r * Math.sin(robotAngle) - rightX;
-        double v3 = r * Math.sin(robotAngle) + rightX;
-        double v4 = r * Math.cos(robotAngle) - rightX;
+
+
+        //double robotAngle = Math.atan2(gy, gx) - Math.PI / 4;
+        double robotAngle = Math.round((Math.atan2(gy, gx) - Math.PI / 4));
+            double rightX = rx;
+            double v1 = r * Math.cos(robotAngle) + rightX;
+            double v2 = r * Math.sin(robotAngle) - rightX;
+            double v3 = r * Math.sin(robotAngle) + rightX;
+            double v4 = r * Math.cos(robotAngle) - rightX;
+
+            leftFront.setPower(v1);
+            rightFront.setPower(v2);
+            leftBack.setPower(v3);
+            rightBack.setPower(v4);
 
 
 
-        leftFront.setPower(v1);
-        rightFront.setPower(v2);
-        leftBack.setPower(v3);
-        rightBack.setPower(v4);
 
 
-        // Show the elapsed game time and wheel power.
         telemetry.addData("Status", "Run Time: " + runtime.toString());
-
-        telemetry.addData("v1", v1);
-        telemetry.addData("v2", v2);
-        telemetry.addData("v3", v3);
-        telemetry.addData("v4", v4);
-
-        telemetry.addData("Arm", armServo.getPortNumber());
-        telemetry.addData("hand", handServo.getPortNumber());
-        telemetry.addData("slide", slideServo.getPortNumber());
-        telemetry.addData("skystone", skystoneServo.getPortNumber());
-        telemetry.addData("lF", leftFoundServo.getPortNumber());
-        telemetry.addData("rF", rightFoundServo.getPortNumber());
-
-        //telemetry.addData("Motors", "left (%.2f), right (%.2f)", leftPower, rightPower);
         telemetry.update();
     }
 
