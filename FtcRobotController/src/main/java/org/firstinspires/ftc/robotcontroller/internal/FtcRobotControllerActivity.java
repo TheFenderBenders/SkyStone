@@ -40,7 +40,6 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.Resources;
-import android.graphics.Camera;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.net.wifi.WifiManager;
@@ -61,6 +60,7 @@ import android.widget.LinearLayout.LayoutParams;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 
+import com.acmerobotics.dashboard.FtcDashboard;
 import com.google.blocks.ftcrobotcontroller.ProgrammingWebHandlers;
 import com.google.blocks.ftcrobotcontroller.runtime.BlocksOpMode;
 import com.qualcomm.ftccommon.ClassManagerFactory;
@@ -122,27 +122,9 @@ import org.firstinspires.inspection.RcInspectionActivity;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import org.opencv.android.JavaCameraView;
-import org.opencv.android.BaseLoaderCallback;
-import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
-import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
-import org.opencv.android.LoaderCallbackInterface;
-import org.opencv.core.Core;
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
-import org.opencv.core.Point;
-import org.opencv.core.RotatedRect;
-import org.opencv.core.Size;
-import org.opencv.imgproc.Imgproc;
-import android.util.Log;
-import android.view.MenuItem;
-import android.view.SurfaceView;
-import android.view.WindowManager;
-
 
 @SuppressWarnings("WeakerAccess")
-public class FtcRobotControllerActivity extends Activity implements CvCameraViewListener2
+public class FtcRobotControllerActivity extends Activity
   {
   public static final String TAG = "RCActivity";
   public String getTag() { return TAG; }
@@ -188,33 +170,6 @@ public class FtcRobotControllerActivity extends Activity implements CvCameraView
   private static boolean permissionsValidated = false;
 
   private WifiDirectChannelChanger wifiDirectChannelChanger;
-
-    private CameraBridgeViewBase mOpenCvCameraView;
-    // Used in Camera selection from menu (when implemented)
-    private boolean              mIsJavaCamera = true;
-    private MenuItem             mItemSwitchCamera = null;
-
-    // These variables are used (at the moment) to fix camera orientation from 270degree to 0degree
-    Mat mRgba;
-    Mat mRgbaF;
-    Mat mRgbaT;
-
-    private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
-      @Override
-      public void onManagerConnected(int status) {
-        switch (status) {
-          case LoaderCallbackInterface.SUCCESS:
-          {
-            Log.i(TAG, "OpenCV loaded successfully");
-            mOpenCvCameraView.enableView();
-          } break;
-          default:
-          {
-            super.onManagerConnected(status);
-          } break;
-        }
-      }
-    };
 
   protected class RobotRestarter implements Restarter {
 
@@ -302,17 +257,6 @@ public class FtcRobotControllerActivity extends Activity implements CvCameraView
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-//    getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_FULLSCREEN);
-//    getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-    setContentView(R.layout.activity_ftc_controller);
-
-    mOpenCvCameraView = (JavaCameraView) findViewById(R.id.show_camera_activity_java_surface_view);
-
-    mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
-
-    mOpenCvCameraView.setCvCameraViewListener(this);
     if (enforcePermissionValidator()) {
       return;
     }
@@ -370,6 +314,7 @@ public class FtcRobotControllerActivity extends Activity implements CvCameraView
           }
         });
         popupMenu.inflate(R.menu.ftc_robot_controller);
+        FtcDashboard.populateMenu(popupMenu.getMenu());
         popupMenu.show();
       }
     });
@@ -437,6 +382,8 @@ public class FtcRobotControllerActivity extends Activity implements CvCameraView
     if (preferencesHelper.readBoolean(getString(R.string.pref_wifi_automute), false)) {
       initWifiMute(true);
     }
+
+    FtcDashboard.start();
   }
 
   protected UpdateUI createUpdateUI() {
@@ -516,6 +463,8 @@ public class FtcRobotControllerActivity extends Activity implements CvCameraView
     if (preferencesHelper != null) preferencesHelper.getSharedPreferences().unregisterOnSharedPreferenceChangeListener(sharedPreferencesListener);
 
     RobotLog.cancelWriteLogcatToDisk();
+
+    FtcDashboard.stop();
   }
 
   protected void bindToService() {
@@ -588,6 +537,7 @@ public class FtcRobotControllerActivity extends Activity implements CvCameraView
   @Override
   public boolean onCreateOptionsMenu(Menu menu) {
     getMenuInflater().inflate(R.menu.ftc_robot_controller, menu);
+    FtcDashboard.populateMenu(menu);
     return true;
   }
 
@@ -722,6 +672,8 @@ public class FtcRobotControllerActivity extends Activity implements CvCameraView
         return service.getRobot().eventLoopManager;
       }
     });
+
+    FtcDashboard.attachWebServer(service.getWebServer());
   }
 
   private void updateUIAndRequestRobotSetup() {
@@ -761,6 +713,8 @@ public class FtcRobotControllerActivity extends Activity implements CvCameraView
 
     passReceivedUsbAttachmentsToEventLoop();
     AndroidBoard.showErrorIfUnknownControlHub();
+
+    FtcDashboard.attachEventLoop(eventLoop);
   }
 
   protected OpModeRegister createOpModeRegister() {
@@ -783,24 +737,6 @@ public class FtcRobotControllerActivity extends Activity implements CvCameraView
         }
       });
   }
-
-    public void onCameraViewStarted(int width, int height) {
-
-      mRgba = new Mat(height, width, CvType.CV_8UC4);
-      mRgbaF = new Mat(height, width, CvType.CV_8UC4);
-      mRgbaT = new Mat(width, width, CvType.CV_8UC4);
-    }
-
-    public void onCameraViewStopped() {
-      mRgba.release();
-    }
-
-    public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
-
-      // TODO Auto-generated method stub
-      mRgba = inputFrame.rgba();
-      return mRgba;       // This function must return
-    }
 
   private void showRestartRobotCompleteToast(@StringRes int resid) {
     AppUtil.getInstance().showToast(UILocation.BOTH, AppUtil.getDefContext().getString(resid));
@@ -882,36 +818,4 @@ public class FtcRobotControllerActivity extends Activity implements CvCameraView
       wifiMuteStateMachine.consumeEvent(WifiMuteEvent.USER_ACTIVITY);
     }
   }
-
-    public void rotate(Mat src, Mat dst, int angle) {
-      angle = angle % 360;
-      if (angle == 270 || angle == -90) {
-        // Rotate clockwise 270 degrees
-        Core.transpose(src, dst);
-        Core.flip(dst, dst, 0);
-      }
-      else if (angle == 180 || angle == -180) {
-        // Rotate clockwise 180 degrees
-        Core.flip(src, dst, -1);
-      }
-      else if (angle == 90 || angle == -270) {
-        // Rotate clockwise 90 degrees
-        Core.transpose(src, dst);
-        Core.flip(dst, dst, 1);
-      }
-      else if (angle == 360 || angle == 0 || angle == -360) {
-        if (src.dataAddr() != dst.dataAddr()) {
-          src.copyTo(dst);
-        }
-      }
-      else {
-        Point srcCenter = new Point(src.width()/2, src.height()/2);
-        Size size = new RotatedRect(srcCenter, src.size(), angle).boundingRect().size();
-        Point center = new Point(size.width/2, size.height/2);
-
-        Mat rotationMatrix2D = Imgproc.getRotationMatrix2D(center, angle, 1);
-        Imgproc.warpAffine(src, dst, rotationMatrix2D, size);
-      }
-    }
-
-  }
+}
