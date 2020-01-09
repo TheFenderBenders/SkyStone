@@ -1,36 +1,45 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
 import org.opencv.core.Point;
 
-@Autonomous(name="Blue-Building-Neutral_side", group ="TFB Auto")
+import static java.lang.Thread.sleep;
+
+@Autonomous(name="Blue-Building-Neutral_side_Test", group ="TFB Auto")
 public class BlueBuildingNeutralSide extends TFB_Autonomous {
     @Override
     public void init() {
 
         // this is where all the right variables are set for the correct inherited code to run
-        starting_position = STARTING_POSITION.BUILDING_ZONE;
         alliance = ALLIANCE.BLUE;
-        skystoneServo = skystoneServoRight;
+        starting_position = STARTING_POSITION.LOADING_ZONE;
+
         under_bridge_position = UNDER_BRIDGE_POSITION.NEUTRAL_SIDE;
         runtime.reset();
-        state = STATES.REPOSITION_FOUNDATION;
-        foundation_state = FOUNDATION_STATES.STRAFE_LEFT;
 
-        one = new Point(300, 300);
-        two = new Point(180, 300);
+        state = STATES.FETCH_AND_DELIVER_SKYSTONES;
+        skystone_state = SKYSTONE_STATES.FIRST_SKYSTONE;
+
+        one = new Point(150, 350);
+        two = new Point(270, 350);
 
         skystoneCoOrdinates[0] = Vector2Weighted.createVector(28.5, 8);
         skystoneCoOrdinates[1] = Vector2Weighted.createVector(28.5, 0);
-        skystoneCoOrdinates[2] = Vector2Weighted.createVector(28.5, -7.5);
-        skystoneCoOrdinates[3] = Vector2Weighted.createVector(28.5, -13.5);
-        skystoneCoOrdinates[4] = Vector2Weighted.createVector(28.5, -22);
-        skystoneCoOrdinates[5] = Vector2Weighted.createVector(28.5, -30);
+        skystoneCoOrdinates[2] = Vector2Weighted.createVector(28.5, -9);
+        skystoneCoOrdinates[3] = Vector2Weighted.createVector(28.5, -17);
+        skystoneCoOrdinates[4] = Vector2Weighted.createVector(28.5, -25);
+        skystoneCoOrdinates[5] = Vector2Weighted.createVector(28.5, -33);
 
-        buildingZoneSkystoneDropOff = Vector2Weighted.createVector(13.5, 50);
-        skystoneFirstSetReferencePoint = Vector2Weighted.createVector(13.5, 0);
-        skystoneSecondSetReferencePoint = Vector2Weighted.createVector(13.5, -24);
+        frontOfStoneCoOrdinates[0] = Vector2Weighted.createVector(20, 8);
+        frontOfStoneCoOrdinates[1] = Vector2Weighted.createVector(20, 0);
+        frontOfStoneCoOrdinates[2] = Vector2Weighted.createVector(20, -9);
+        frontOfStoneCoOrdinates[3] = Vector2Weighted.createVector(20, -17);
+        frontOfStoneCoOrdinates[4] = Vector2Weighted.createVector(20, -25);
+        frontOfStoneCoOrdinates[5] = Vector2Weighted.createVector(20, -33);
+
+        buildingZoneSkystoneDropOff = Vector2Weighted.createVector(20, 50);
 
         super.init();
 
@@ -41,18 +50,21 @@ public class BlueBuildingNeutralSide extends TFB_Autonomous {
 
     }
 
+
     @Override
     public void start() {
         super.start();
     }
 
+
     @Override
-    public void loop() {
+    public void loop()  {
         super.loop();
     }
 
+
     @Override
-    public void stop() {
-        super.stop();
+    public void stop(){
+
     }
 }

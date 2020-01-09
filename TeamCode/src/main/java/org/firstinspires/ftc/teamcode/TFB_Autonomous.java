@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -51,16 +52,17 @@ public class TFB_Autonomous extends TFB_OpMode {
     protected double data1[], data2[];
     protected int cameraMonitorViewId;
     protected SampleMecanumDriveBase drive;
-    protected Vector2d skystoneCoOrdinates[];
+    protected Vector2d skystoneCoOrdinates[] = new Vector2d[6];
+    protected Vector2d frontOfStoneCoOrdinates[] = new Vector2d[6];
     protected Vector2d buildingZoneSkystoneDropOff;
     protected Vector2d skystoneFirstSetReferencePoint;
     protected Vector2d skystoneSecondSetReferencePoint;
 
-    protected Servo skystoneServo; // pointer to the correct Skystone servo
-
     boolean stoneWall[] = {true,true,true,true,true,true}; // indicates presence of stones/skystones
     int skystone1 = -1;
     int skystone2 = -1;
+    int index;
+    int next_stone;
 
     enum DIRECTION {
         LEFT, RIGHT
@@ -91,6 +93,7 @@ public class TFB_Autonomous extends TFB_OpMode {
     protected FOUNDATION_STATES foundation_states;
 
     protected STATES state;
+    protected SKYSTONE_STATES skystone_state;
     protected FOUNDATION_STATES foundation_state;
 
     enum STATES {
@@ -98,6 +101,18 @@ public class TFB_Autonomous extends TFB_OpMode {
         PARK_UNDER_BRIDGE,
         REPOSITION_FOUNDATION,
         DONE
+    }
+
+    enum SKYSTONE_STATES {
+        FIRST_SKYSTONE,
+        DROPOFF_FIRST_SKYSTONE,
+        SECOND_SKYSTONE,
+        DROPOFF_SECOND_SKYSTONE,
+        THIRD_STONE,
+        DROPOFF_THIRD_SKYSTONE,
+        FOURTH_STONE,
+        DROPOFF_FOURTH_SKYSTONE,
+        STONES_DONE
     }
 
     enum FOUNDATION_STATES {
@@ -141,11 +156,12 @@ public class TFB_Autonomous extends TFB_OpMode {
         phoneCam.openCameraDevice();
         phoneCam.setPipeline(new SamplePipeline());
         phoneCam.showFpsMeterOnViewport(false);
-        phoneCam.startStreaming(640, 480, OpenCvCameraRotation.UPRIGHT);
+        phoneCam.startStreaming(640, 480, OpenCvCameraRotation.UPSIDE_DOWN);
 
         drive = new SampleMecanumDriveREVOptimized(hardwareMap);
 
-        telemetry.addData("Status", "Hit Play to Start.");        telemetry.update();
+        telemetry.addData("Status", "Hit Play to Start.");
+        telemetry.update();
     }
 
     @Override
@@ -160,64 +176,127 @@ public class TFB_Autonomous extends TFB_OpMode {
 
     @Override
     public void loop()  {
-
         switch (state) {
             case FETCH_AND_DELIVER_SKYSTONES:
+                switch (skystone_state) {
+                    case FIRST_SKYSTONE:
+                        // get the first Skystone
+                        drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(skystoneCoOrdinates[skystone1]).build());
 
-                // get the first Skystone
-                drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(skystoneCoOrdinates[skystone1]).build());
-                skystoneServo.setPosition(0.35);
-                try {
-                    sleep(250);
-                } catch (InterruptedException e) {
-                    telemetry.addLine("Sleep exception");
-                    telemetry.update();
-                }
-                drive.followTrajectorySync(drive.trajectoryBuilder().back(15).build()); // back up a bit
-                drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(buildingZoneSkystoneDropOff).build());
-                skystoneServo.setPosition(0.25);
-                stoneWall[skystone1] = false;
-                drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(skystoneSecondSetReferencePoint).build());
-
-                // get the second Skystone
-                drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(skystoneCoOrdinates[skystone2]).build());
-                skystoneServo.setPosition(0.35);
-                try {
-                    sleep(250);
-                } catch (InterruptedException e) {
-                    telemetry.addLine("Sleep exception");
-                    telemetry.update();
-                }
-                drive.followTrajectorySync(drive.trajectoryBuilder().back(15).build()); // back up a bit
-                drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(buildingZoneSkystoneDropOff).build());
-                skystoneServo.setPosition(0.25);
-                stoneWall[skystone2] = false;
-                drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(skystoneFirstSetReferencePoint).build());
-
-                // find the next two available stones to pick...assuming we can only deliver four at this point
-                int index = -1;
-                for (int i=0; i<2; i++) {
-                    do {
-                        // skip till you find the next available stone
-                        index++;
-                    } while (!stoneWall[index]);
-                     drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(skystoneCoOrdinates[index]).build());
-                     skystoneServo.setPosition(0.35);
-                     try {
-                        sleep(250);
-                    } catch (InterruptedException e) {
-                        telemetry.addLine("Sleep exception");
+                        if (alliance == ALLIANCE.BLUE) {
+                            skystoneServoRight.setPosition(0.35);
+                        }
+                        else {
+                            skystoneServoLeft.setPosition(0.0);
+                        }
+                        try {
+                            sleep(250);
+                        } catch (InterruptedException e) {
+                            telemetry.addLine("Sleep exception");
+                            telemetry.update();
+                        }
+                        drive.followTrajectorySync(drive.trajectoryBuilder().back(8.5).build()); // back up a bit
+                        skystone_state = SKYSTONE_STATES.DROPOFF_FIRST_SKYSTONE;
+                        telemetry.addData("here", "1");
                         telemetry.update();
-                    }
-                    drive.followTrajectorySync(drive.trajectoryBuilder().back(15).build()); // back up a bit
-                    drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(buildingZoneSkystoneDropOff).build());
-                    skystoneServo.setPosition(0.25);
-                    stoneWall[index] = false;
-                    drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(skystoneFirstSetReferencePoint).build());
-                }
+                        break;
 
-                state = STATES.DONE;
-                break;
+                    case DROPOFF_FIRST_SKYSTONE:
+                        telemetry.addData("here", "2");
+                        telemetry.update();
+                        dropOffStone();
+                        stoneWall[skystone1] = false;
+
+//                        drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(skystoneSecondSetReferencePoint).build());
+                        drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(frontOfStoneCoOrdinates[skystone2]).build());
+                        skystone_state = SKYSTONE_STATES.SECOND_SKYSTONE;
+                        break;
+
+                    case SECOND_SKYSTONE:
+                        drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(skystoneCoOrdinates[skystone2]).build());
+                        if (alliance == ALLIANCE.BLUE) {
+                            skystoneServoRight.setPosition(0.35);
+                        }
+                        else {
+                            skystoneServoLeft.setPosition(0.15);
+                        }
+                        try {
+                            sleep(250);
+                        } catch (InterruptedException e) {
+                            telemetry.addLine("Sleep exception");
+                            telemetry.update();
+                        }
+                        drive.followTrajectorySync(drive.trajectoryBuilder().back(8.5).build()); // back up a bit
+                        skystone_state = SKYSTONE_STATES.DROPOFF_SECOND_SKYSTONE;
+                        break;
+
+                    case DROPOFF_SECOND_SKYSTONE:
+                        dropOffStone();
+                        stoneWall[skystone2] = false;
+                        skystone_state = SKYSTONE_STATES.THIRD_STONE;
+                        break;
+
+                    case THIRD_STONE:
+                        next_stone = findNextAvailableStone();
+                        telemetry.addData("next stone", next_stone);
+                        telemetry.update();
+                        drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(frontOfStoneCoOrdinates[next_stone]).build());
+                        drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(skystoneCoOrdinates[next_stone]).build());
+                        if (alliance == ALLIANCE.BLUE) {
+                            skystoneServoRight.setPosition(0.35);
+                        }
+                        else {
+                            skystoneServoLeft.setPosition(0.15);
+                        }
+                        try {
+                            sleep(250);
+                        } catch (InterruptedException e) {
+                            telemetry.addLine("Sleep exception");
+                            telemetry.update();
+                        }
+                        drive.followTrajectorySync(drive.trajectoryBuilder().back(15).build()); // back up a bit
+                        skystone_state = SKYSTONE_STATES.DROPOFF_THIRD_SKYSTONE;
+                        break;
+
+                    case DROPOFF_THIRD_SKYSTONE:
+                        dropOffStone();
+                        stoneWall[index] = false;
+                        skystone_state = SKYSTONE_STATES.FOURTH_STONE;
+                        break;
+
+                    case FOURTH_STONE:
+                        next_stone = findNextAvailableStone();
+                        telemetry.addData("next stone", next_stone);
+                        telemetry.update();
+                        drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(frontOfStoneCoOrdinates[next_stone]).build());
+                        drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(skystoneCoOrdinates[next_stone]).build());
+                        if (alliance == ALLIANCE.BLUE) {
+                            skystoneServoRight.setPosition(0.35);
+                        }
+                        else {
+                            skystoneServoLeft.setPosition(0.15);
+                        }
+                        try {
+                            sleep(250);
+                        } catch (InterruptedException e) {
+                            telemetry.addLine("Sleep exception");
+                            telemetry.update();
+                        }
+                        drive.followTrajectorySync(drive.trajectoryBuilder().back(15).build()); // back up a bit
+
+                        break;
+
+                    case DROPOFF_FOURTH_SKYSTONE:
+                        dropOffStone();
+                        stoneWall[index] = false;
+                        skystone_state = SKYSTONE_STATES.STONES_DONE;
+                        break;
+
+                    case STONES_DONE:
+                        state = STATES.PARK_UNDER_BRIDGE;
+                        break;
+
+                }
 
             case REPOSITION_FOUNDATION:
 
@@ -227,7 +306,7 @@ public class TFB_Autonomous extends TFB_OpMode {
                 break;
 
             case DONE  :
-
+//                Thread.yield();
                 break;
         }
     }
@@ -265,21 +344,23 @@ public class TFB_Autonomous extends TFB_OpMode {
             data2 = hsvThresholdOutput.get((int)two.y, (int)two.x);
 
             // 0-based indexes
-            if(data1[0]>200){ // first stone is a Skystone and so is the fourth
+            if(data1[0]<100){ // first stone is a Skystone and so is the fourth
                 skystone1 = 0;
                 skystone2 = 3;
             }
-            if(data2[0]>200){ // second stone is a Skystone and so is the fifth
+            else if(data2[0]<100){ // second stone is a Skystone and so is the fifth
                 skystone1 = 1;
                 skystone2 = 4;
             }
-            else{ // third stone is a Skystone and so is the sixth
+            else { // third stone is a Skystone and so is the sixth
                 skystone1 = 2;
                 skystone2 = 5;
             }
             Imgproc.circle(input, one, 10, new Scalar((data1[0]>200)?255:0, (data1[0]<=200)?255:0, 0), 4);
             Imgproc.circle(input, two, 10, new Scalar((data2[0]>200)?255:0, (data2[0]<=200)?255:0, 0),  4);
-
+            telemetry.addData("Stone1:",skystone1);
+            telemetry.addData("Stone2:",skystone2);
+            telemetry.update();
 
             return input;
         }
@@ -362,4 +443,32 @@ public class TFB_Autonomous extends TFB_OpMode {
 
 
     }
+
+    void dropOffStone () {
+        drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(buildingZoneSkystoneDropOff).build());
+        if (alliance == ALLIANCE.BLUE) {
+            skystoneServoRight.setPosition(0.0);
+        }
+        else {
+            skystoneServoLeft.setPosition(0.15);
+        }
+        try {
+            sleep(250);
+        } catch (InterruptedException e) {
+            telemetry.addLine("Sleep exception");
+            telemetry.update();
+        }
+
+
+    }
+
+    int findNextAvailableStone() {
+        index = 0;
+        while (stoneWall[index] == false) {
+            index++;
+        }
+        return index;
+    }
+
+
 }

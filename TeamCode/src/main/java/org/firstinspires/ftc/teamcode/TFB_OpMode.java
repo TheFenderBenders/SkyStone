@@ -94,19 +94,21 @@ public  class TFB_OpMode extends OpMode
         telemetry.addData("Status", "Initializing...");
         telemetry.update();
 
-        colorSensor = hardwareMap.get(ColorSensor.class, "color_sensor");
+        msStuckDetectLoop = 30000;
 
-        skystoneServoLeft = hardwareMap.get(Servo.class, "skystone_servo_left");
-        skystoneServoLeft.setPosition(0);
+//        colorSensor = hardwareMap.get(ColorSensor.class, "color_sensor");
 
-        skystoneServoRight = hardwareMap.get(Servo.class, "skystone_servo_right");
+        skystoneServoLeft = hardwareMap.get(Servo.class, "l_skystone");
+        skystoneServoLeft.setPosition(0.35);
+
+        skystoneServoRight = hardwareMap.get(Servo.class, "r_skystone");
         skystoneServoRight.setPosition(0);
 
-        foundationCaptureServoLeft = hardwareMap.get(Servo.class, "l_foundation");
-        foundationCaptureServoLeft.setPosition(0);
+//        foundationCaptureServoLeft = hardwareMap.get(Servo.class, "l_foundation");
+//        foundationCaptureServoLeft.setPosition(0);
 
-        foundationCaptureServoRight = hardwareMap.get(Servo.class, "r_foundation");
-        foundationCaptureServoRight.setPosition(0);
+//        foundationCaptureServoRight = hardwareMap.get(Servo.class, "r_foundation");
+//        foundationCaptureServoRight.setPosition(0);
 
     }
 
