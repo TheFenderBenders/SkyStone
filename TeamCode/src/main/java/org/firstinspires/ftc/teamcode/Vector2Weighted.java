@@ -6,6 +6,7 @@ public class Vector2Weighted {
 
     public static Vector2d createVector(double x, double y){
 
-        return new Vector2d(x, y*(1.15384615));
+        return new Vector2d(x, y);
+//        return new Vector2d(x, y*(1.15384615));
     }
 }

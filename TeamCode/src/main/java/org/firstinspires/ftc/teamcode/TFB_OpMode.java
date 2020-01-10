@@ -94,9 +94,9 @@ public  class TFB_OpMode extends OpMode
         telemetry.addData("Status", "Initializing...");
         telemetry.update();
 
-        msStuckDetectLoop = 30000;
+        msStuckDetectLoop = 7000;
 
-//        colorSensor = hardwareMap.get(ColorSensor.class, "color_sensor");
+        colorSensor = hardwareMap.get(ColorSensor.class, "color_sensor");
 
         skystoneServoLeft = hardwareMap.get(Servo.class, "l_skystone");
         skystoneServoLeft.setPosition(0.35);

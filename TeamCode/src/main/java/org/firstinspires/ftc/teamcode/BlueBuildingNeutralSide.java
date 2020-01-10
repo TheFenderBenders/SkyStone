@@ -22,22 +22,22 @@ public class BlueBuildingNeutralSide extends TFB_Autonomous {
         state = STATES.FETCH_AND_DELIVER_SKYSTONES;
         skystone_state = SKYSTONE_STATES.FIRST_SKYSTONE;
 
-        one = new Point(150, 350);
-        two = new Point(270, 350);
+        one = new Point(230, 350);
+        two = new Point(320, 350);
 
         skystoneCoOrdinates[0] = Vector2Weighted.createVector(28.5, 8);
         skystoneCoOrdinates[1] = Vector2Weighted.createVector(28.5, 0);
-        skystoneCoOrdinates[2] = Vector2Weighted.createVector(28.5, -9);
-        skystoneCoOrdinates[3] = Vector2Weighted.createVector(28.5, -17);
-        skystoneCoOrdinates[4] = Vector2Weighted.createVector(28.5, -25);
-        skystoneCoOrdinates[5] = Vector2Weighted.createVector(28.5, -33);
+        skystoneCoOrdinates[2] = Vector2Weighted.createVector(28.5, -12);
+        skystoneCoOrdinates[3] = Vector2Weighted.createVector(28.5, -20);
+        skystoneCoOrdinates[4] = Vector2Weighted.createVector(28.5, -27);
+        skystoneCoOrdinates[5] = Vector2Weighted.createVector(28.5, -37);
 
         frontOfStoneCoOrdinates[0] = Vector2Weighted.createVector(20, 8);
         frontOfStoneCoOrdinates[1] = Vector2Weighted.createVector(20, 0);
-        frontOfStoneCoOrdinates[2] = Vector2Weighted.createVector(20, -9);
-        frontOfStoneCoOrdinates[3] = Vector2Weighted.createVector(20, -17);
-        frontOfStoneCoOrdinates[4] = Vector2Weighted.createVector(20, -25);
-        frontOfStoneCoOrdinates[5] = Vector2Weighted.createVector(20, -33);
+        frontOfStoneCoOrdinates[2] = Vector2Weighted.createVector(20, -12);
+        frontOfStoneCoOrdinates[3] = Vector2Weighted.createVector(20, -20);
+        frontOfStoneCoOrdinates[4] = Vector2Weighted.createVector(20, -27);
+        frontOfStoneCoOrdinates[5] = Vector2Weighted.createVector(20, -37);
 
         buildingZoneSkystoneDropOff = Vector2Weighted.createVector(20, 50);
 

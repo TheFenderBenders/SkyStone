@@ -57,12 +57,15 @@ public class TFB_Autonomous extends TFB_OpMode {
     protected Vector2d buildingZoneSkystoneDropOff;
     protected Vector2d skystoneFirstSetReferencePoint;
     protected Vector2d skystoneSecondSetReferencePoint;
+    protected boolean foundBridge = false;
 
     boolean stoneWall[] = {true,true,true,true,true,true}; // indicates presence of stones/skystones
     int skystone1 = -1;
     int skystone2 = -1;
     int index;
     int next_stone;
+
+    protected Thread t1;
 
     enum DIRECTION {
         LEFT, RIGHT
@@ -100,14 +103,17 @@ public class TFB_Autonomous extends TFB_OpMode {
         FETCH_AND_DELIVER_SKYSTONES,
         PARK_UNDER_BRIDGE,
         REPOSITION_FOUNDATION,
+        TEST,
         DONE
     }
 
     enum SKYSTONE_STATES {
         FIRST_SKYSTONE,
         DROPOFF_FIRST_SKYSTONE,
+        RESET_FOR_SECOND_SKYSTONE,
         SECOND_SKYSTONE,
         DROPOFF_SECOND_SKYSTONE,
+        RESET_FOR_THIRD_STONE,
         THIRD_STONE,
         DROPOFF_THIRD_SKYSTONE,
         FOURTH_STONE,
@@ -159,6 +165,7 @@ public class TFB_Autonomous extends TFB_OpMode {
         phoneCam.startStreaming(640, 480, OpenCvCameraRotation.UPSIDE_DOWN);
 
         drive = new SampleMecanumDriveREVOptimized(hardwareMap);
+        t1 = new Thread(new ArmResetter());
 
         telemetry.addData("Status", "Hit Play to Start.");
         telemetry.update();
@@ -180,6 +187,7 @@ public class TFB_Autonomous extends TFB_OpMode {
             case FETCH_AND_DELIVER_SKYSTONES:
                 switch (skystone_state) {
                     case FIRST_SKYSTONE:
+                        phoneCam.stopStreaming();
                         // get the first Skystone
                         drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(skystoneCoOrdinates[skystone1]).build());
 
@@ -206,8 +214,10 @@ public class TFB_Autonomous extends TFB_OpMode {
                         telemetry.update();
                         dropOffStone();
                         stoneWall[skystone1] = false;
+                        skystone_state = SKYSTONE_STATES.RESET_FOR_SECOND_SKYSTONE;
+                        break;
 
-//                        drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(skystoneSecondSetReferencePoint).build());
+                    case RESET_FOR_SECOND_SKYSTONE:
                         drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(frontOfStoneCoOrdinates[skystone2]).build());
                         skystone_state = SKYSTONE_STATES.SECOND_SKYSTONE;
                         break;
@@ -233,14 +243,16 @@ public class TFB_Autonomous extends TFB_OpMode {
                     case DROPOFF_SECOND_SKYSTONE:
                         dropOffStone();
                         stoneWall[skystone2] = false;
+                        skystone_state = SKYSTONE_STATES.RESET_FOR_THIRD_STONE;
+                        break;
+
+                    case RESET_FOR_THIRD_STONE:
+                        next_stone = findNextAvailableStone();
+                        drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(frontOfStoneCoOrdinates[next_stone]).build());
                         skystone_state = SKYSTONE_STATES.THIRD_STONE;
                         break;
 
                     case THIRD_STONE:
-                        next_stone = findNextAvailableStone();
-                        telemetry.addData("next stone", next_stone);
-                        telemetry.update();
-                        drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(frontOfStoneCoOrdinates[next_stone]).build());
                         drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(skystoneCoOrdinates[next_stone]).build());
                         if (alliance == ALLIANCE.BLUE) {
                             skystoneServoRight.setPosition(0.35);
@@ -254,45 +266,18 @@ public class TFB_Autonomous extends TFB_OpMode {
                             telemetry.addLine("Sleep exception");
                             telemetry.update();
                         }
-                        drive.followTrajectorySync(drive.trajectoryBuilder().back(15).build()); // back up a bit
+                        drive.followTrajectorySync(drive.trajectoryBuilder().back(8.5).build()); // back up a bit
                         skystone_state = SKYSTONE_STATES.DROPOFF_THIRD_SKYSTONE;
                         break;
 
                     case DROPOFF_THIRD_SKYSTONE:
                         dropOffStone();
                         stoneWall[index] = false;
-                        skystone_state = SKYSTONE_STATES.FOURTH_STONE;
-                        break;
-
-                    case FOURTH_STONE:
-                        next_stone = findNextAvailableStone();
-                        telemetry.addData("next stone", next_stone);
-                        telemetry.update();
-                        drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(frontOfStoneCoOrdinates[next_stone]).build());
-                        drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(skystoneCoOrdinates[next_stone]).build());
-                        if (alliance == ALLIANCE.BLUE) {
-                            skystoneServoRight.setPosition(0.35);
-                        }
-                        else {
-                            skystoneServoLeft.setPosition(0.15);
-                        }
-                        try {
-                            sleep(250);
-                        } catch (InterruptedException e) {
-                            telemetry.addLine("Sleep exception");
-                            telemetry.update();
-                        }
-                        drive.followTrajectorySync(drive.trajectoryBuilder().back(15).build()); // back up a bit
-
-                        break;
-
-                    case DROPOFF_FOURTH_SKYSTONE:
-                        dropOffStone();
-                        stoneWall[index] = false;
                         skystone_state = SKYSTONE_STATES.STONES_DONE;
                         break;
 
                     case STONES_DONE:
+                        foundBridge = false;
                         state = STATES.PARK_UNDER_BRIDGE;
                         break;
 
@@ -303,10 +288,31 @@ public class TFB_Autonomous extends TFB_OpMode {
                 break;
 
             case PARK_UNDER_BRIDGE:
+                if (foundBridge) { // continue
+                    drive.setMotorPowers(0.0, 0.0, 0.0, 0.0);
+                    runtime.reset();
+                    state = STATES.DONE;
+
+                }
+                else {
+                    moveToBridge();
+                }
+                break;
+
+            case TEST:
+                if (runtime.milliseconds() < 2000) {
+                    drive.setMotorPowers(0.2, 0.2, 0.2, 0.2);
+                }
+                else {
+                    drive.setMotorPowers(0.0, 0.0, 0.0, 0.0);
+                    state = STATES.DONE;
+                }
                 break;
 
             case DONE  :
 //                Thread.yield();
+                drive.setMotorPowers(0.0, 0.0, 0.0, 0.0);
+
                 break;
         }
     }
@@ -446,19 +452,23 @@ public class TFB_Autonomous extends TFB_OpMode {
 
     void dropOffStone () {
         drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(buildingZoneSkystoneDropOff).build());
+        t1.start();
+/*
         if (alliance == ALLIANCE.BLUE) {
             skystoneServoRight.setPosition(0.0);
         }
         else {
             skystoneServoLeft.setPosition(0.15);
         }
-        try {
-            sleep(250);
+
+ */
+/*        try {
+            sleep(50);
         } catch (InterruptedException e) {
             telemetry.addLine("Sleep exception");
             telemetry.update();
         }
-
+*/
 
     }
 
@@ -468,6 +478,37 @@ public class TFB_Autonomous extends TFB_OpMode {
             index++;
         }
         return index;
+    }
+
+    void moveToBridge() {
+        int red = colorSensor.red();
+        int green = colorSensor.green();
+        int blue = colorSensor.blue();
+
+        if((blue>red)&&(blue>green)){
+            telemetry.addLine("Blue Object Detected");
+            foundBridge = true;
+        }
+        else if((red>blue)&&(red>green)){
+            telemetry.addLine("Red Object Detected");
+            foundBridge = true;
+        }
+        else{
+            drive.setMotorPowers(0.3, -0.3, 0.3, -0.3);
+        }
+
+
+    }
+
+    class ArmResetter implements Runnable {
+        public void run() {
+            if (alliance == ALLIANCE.BLUE) {
+                skystoneServoRight.setPosition(0.0);
+            }
+            else {
+                skystoneServoLeft.setPosition(0.15);
+            }
+        }
     }
 
 
