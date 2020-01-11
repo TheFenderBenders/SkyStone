@@ -51,6 +51,7 @@ import com.qualcomm.robotcore.util.Range;
  */
 
 @TeleOp(name="Linear Slide", group="Linear Opmode")
+@Disabled
 
 public class SlideEncoderLinearOpMode extends LinearOpMode {
 

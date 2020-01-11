@@ -56,6 +56,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
  */
 
 @TeleOp(name="IMU Test", group="Linear Opmode")
+@Disabled
+
 public class IMUTest extends LinearOpMode {
 
     BNO055IMU imu;

@@ -46,6 +46,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
 
 @Autonomous(name="IMU Strafe Test", group="LM3")
+@Disabled
 public class IMU_Strafing_Test extends LinearOpMode {
 
     // Declare OpMode members.

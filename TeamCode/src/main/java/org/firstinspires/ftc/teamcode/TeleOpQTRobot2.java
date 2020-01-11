@@ -55,6 +55,8 @@ import java.security.Policy;
  */
 
 @TeleOp(name="Esta es que ella habla", group="Iterative Opmode")
+@Disabled
+
 public class TeleOpQTRobot2 extends OpMode
 {
     // Declare OpMode members.

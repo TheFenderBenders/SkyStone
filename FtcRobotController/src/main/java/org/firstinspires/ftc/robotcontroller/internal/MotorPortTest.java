@@ -51,6 +51,8 @@ import com.qualcomm.robotcore.util.Range;
  */
 
 @TeleOp(name="Motor Port Query", group="Iterative Opmode")
+@Disabled
+
 public class MotorPortTest extends OpMode
 {
     // Declare OpMode members.

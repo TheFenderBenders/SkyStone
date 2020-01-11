@@ -2,12 +2,14 @@ package org.firstinspires.ftc.teamcode;
 
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.opencv.core.Point;
 
 import static java.lang.Thread.sleep;
 
 @Autonomous(name="Blue-Building-Neutral_side_Test", group ="TFB Auto")
+@Disabled
 public class BlueBuildingNeutralSide extends TFB_Autonomous {
     @Override
     public void init() {

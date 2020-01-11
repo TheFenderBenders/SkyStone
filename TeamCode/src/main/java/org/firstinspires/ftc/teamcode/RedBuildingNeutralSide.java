@@ -1,8 +1,10 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 @Autonomous(name="Red-Building-Neutral_side", group ="TFB Auto")
+@Disabled
 public class RedBuildingNeutralSide extends TFB_Autonomous {
     @Override
     public void init() {
