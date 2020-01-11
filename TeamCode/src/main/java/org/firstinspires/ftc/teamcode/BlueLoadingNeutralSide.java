@@ -9,7 +9,7 @@ import org.opencv.core.Point;
 import static java.lang.Thread.sleep;
 
 @Autonomous(name="Blue-Loading-Neutral_side", group ="TFB Auto")
-@Disabled
+
 public class BlueLoadingNeutralSide extends TFB_Autonomous {
     @Override
     public void init() {
@@ -21,7 +21,7 @@ public class BlueLoadingNeutralSide extends TFB_Autonomous {
         under_bridge_position = UNDER_BRIDGE_POSITION.NEUTRAL_SIDE;
         runtime.reset();
 
-        state = STATES.TEST;
+        state = STATES.FETCH_AND_DELIVER_SKYSTONES;
         skystone_state = SKYSTONE_STATES.FIRST_SKYSTONE;
 
         one = new Point(230, 350);
