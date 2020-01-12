@@ -89,14 +89,14 @@ public class BlueLoadingWall extends LinearOpMode {
 
         skystoneCoOrdinates[0] = Vector2Weighted.createVector(STONE_WALL_DISTANCE, 9);
         skystoneCoOrdinates[1] = Vector2Weighted.createVector(STONE_WALL_DISTANCE, 0);
-        skystoneCoOrdinates[2] = Vector2Weighted.createVector(STONE_WALL_DISTANCE, -8);
+        skystoneCoOrdinates[2] = Vector2Weighted.createVector(STONE_WALL_DISTANCE, -9);
         skystoneCoOrdinates[3] = Vector2Weighted.createVector(STONE_WALL_DISTANCE+2, -16);
         skystoneCoOrdinates[4] = Vector2Weighted.createVector(STONE_WALL_DISTANCE+3, -25);
         skystoneCoOrdinates[5] = Vector2Weighted.createVector(STONE_WALL_DISTANCE+2, -33);
 
         frontOfStoneCoOrdinates[0] = Vector2Weighted.createVector(STONE_WALL_DISTANCE - BACKUP_DISTANCE, 9);
         frontOfStoneCoOrdinates[1] = Vector2Weighted.createVector(STONE_WALL_DISTANCE - BACKUP_DISTANCE, 0);
-        frontOfStoneCoOrdinates[2] = Vector2Weighted.createVector(STONE_WALL_DISTANCE - BACKUP_DISTANCE, -10);
+        frontOfStoneCoOrdinates[2] = Vector2Weighted.createVector(STONE_WALL_DISTANCE - BACKUP_DISTANCE, -9);
         frontOfStoneCoOrdinates[3] = Vector2Weighted.createVector(STONE_WALL_DISTANCE - BACKUP_DISTANCE, -18);
         frontOfStoneCoOrdinates[4] = Vector2Weighted.createVector(STONE_WALL_DISTANCE - BACKUP_DISTANCE, -25);
         frontOfStoneCoOrdinates[5] = Vector2Weighted.createVector(STONE_WALL_DISTANCE - BACKUP_DISTANCE, -33);
@@ -147,6 +147,7 @@ public class BlueLoadingWall extends LinearOpMode {
                 drive.followTrajectorySync(drive.trajectoryBuilder().back(BACKUP_DISTANCE).build()); // back up a bit
                 dropOffStone();
                 stoneWall[skystone2] = false;
+                next_stone = findNextAvailableStone();
 
                 foundBridge = false;
 
