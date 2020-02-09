@@ -39,7 +39,7 @@ import static org.firstinspires.ftc.teamcode.drive.DriveConstants.kV;
 @Config
 public abstract class SampleMecanumDriveBase extends MecanumDrive {
     public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(1, 0, 0);
-    public static PIDCoefficients HEADING_PID = new PIDCoefficients(5, 0, 0);
+    public static PIDCoefficients HEADING_PID = new PIDCoefficients(11, 0, 0);
 
 
     public enum Mode {
@@ -213,7 +213,7 @@ public abstract class SampleMecanumDriveBase extends MecanumDrive {
         List<Double> positions = getWheelPositions();
         double currentTimestamp = clock.seconds();
 
-        List<Double> velocities = new ArrayList<>(positions.size());;
+        List<Double> velocities = new ArrayList<>(positions.size());
         if (lastWheelPositions != null) {
             double dt = currentTimestamp - lastTimestamp;
             for (int i = 0; i < positions.size(); i++) {

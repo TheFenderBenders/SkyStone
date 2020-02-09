@@ -35,7 +35,7 @@ public class DriveConstants {
      * MOTOR_VELO_PID with the tuned coefficients from DriveVelocityPIDTuner.
      */
     public static final boolean RUN_USING_ENCODER = true;
-    public static PIDCoefficients MOTOR_VELO_PID = new PIDCoefficients(18,0,14);
+    public static PIDCoefficients MOTOR_VELO_PID = new PIDCoefficients(25,0,5);
 
     /*
      * These are physical constants that can be determined from your robot (including the track
@@ -47,7 +47,7 @@ public class DriveConstants {
      */
     public static double WHEEL_RADIUS = 1.9685;
     public static double GEAR_RATIO = 99.5/27.4; // output (wheel) speed / input (motor) speed
-    public static double TRACK_WIDTH = 15.45;
+    public static double TRACK_WIDTH = 10;
 
     /*
      * These are the feedforward parameters used to model the drive motor behavior. If you are using
@@ -68,7 +68,7 @@ public class DriveConstants {
      * forces acceleration-limited profiling).
      */
     public static DriveConstraints BASE_CONSTRAINTS = new DriveConstraints(
-            30.0, 30.0, 0.0,
+            50.0, 50.0, 0.0,
             Math.toRadians(180.0), Math.toRadians(180.0), 0.0
     );
 

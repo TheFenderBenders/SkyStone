@@ -27,7 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.robotcontroller.external.samples;
+package org.firstinspires.ftc.teamcode.OldCode;
 
 import android.app.Activity;
 import android.graphics.Color;
@@ -53,8 +53,8 @@ import java.util.Locale;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list.
  */
 @TeleOp(name = "Sensor: REVColorDistance", group = "Sensor")
-@Disabled                            // Comment this out to add to the opmode list
-public class SensorREVColorDistance extends LinearOpMode {
+                           // Comment this out to add to the opmode list
+public class Rev2ColorDistanceSensor extends LinearOpMode {
 
     /**
      * Note that the REV Robotics Color-Distance incorporates two sensors into one device.
@@ -91,6 +91,9 @@ public class SensorREVColorDistance extends LinearOpMode {
     @Override
     public void runOpMode() {
 
+        int RED = 0;
+        int GREEN = 1;
+        int BLUE = 2;
         // get a reference to the color sensor.
         sensorColor = hardwareMap.get(ColorSensor.class, "sensor_color_distance");
 
@@ -119,32 +122,9 @@ public class SensorREVColorDistance extends LinearOpMode {
         // Note we use opModeIsActive() as our loop condition because it is an interruptible method.
         while (opModeIsActive()) {
             // convert the RGB values to HSV values.
-            // multiply by the SCALE_FACTOR.
-            // then cast it back to int (SCALE_FACTOR is a double)
-            Color.RGBToHSV((int) (sensorColor.red() * SCALE_FACTOR),
-                    (int) (sensorColor.green() * SCALE_FACTOR),
-                    (int) (sensorColor.blue() * SCALE_FACTOR),
-                    hsvValues);
+            int[] rgb = new int[]{sensorColor.red(),sensorColor.green(),sensorColor.blue()};
 
-            // send the info back to driver station using telemetry function.
-            telemetry.addData("Distance (cm)",
-                    String.format(Locale.US, "%.02f", sensorDistance.getDistance(DistanceUnit.CM)));
-            telemetry.addData("Alpha", sensorColor.alpha());
-            telemetry.addData("Red  ", sensorColor.red());
-            telemetry.addData("Green", sensorColor.green());
-            telemetry.addData("Blue ", sensorColor.blue());
-            telemetry.addData("Hue", hsvValues[0]);
 
-            // change the background color to match the color detected by the RGB sensor.
-            // pass a reference to the hue, saturation, and value array as an argument
-            // to the HSVToColor method.
-            relativeLayout.post(new Runnable() {
-                public void run() {
-                    relativeLayout.setBackgroundColor(Color.HSVToColor(0xff, values));
-                }
-            });
-
-            telemetry.update();
         }
 
         // Set the panel back to the default color
@@ -153,5 +133,10 @@ public class SensorREVColorDistance extends LinearOpMode {
                 relativeLayout.setBackgroundColor(Color.WHITE);
             }
         });
+    }
+    boolean isColor(int[] colorTest, int[] color, int confidence){
+
+
+        return false;
     }
 }
