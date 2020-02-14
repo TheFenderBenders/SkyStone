@@ -29,7 +29,7 @@ public class TFB_LinearOpMode extends LinearOpMode {
         //rightSkystoneArm = hardwareMap.get(Servo.class,"right_sa");
 
         rightSkystoneHand = hardwareMap.get(Servo.class, "right_sh");
-        rightSkystoneHand.setPosition(0);
+        rightSkystoneHand.setPosition(0.0);
         //rightSkystoneHand = hardwareMap.get(Servo.class,"right_sh");
 
     }

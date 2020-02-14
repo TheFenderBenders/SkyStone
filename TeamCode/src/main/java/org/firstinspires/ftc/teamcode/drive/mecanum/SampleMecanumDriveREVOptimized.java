@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.drive.mecanum;
 import android.support.annotation.NonNull;
 
 import com.acmerobotics.roadrunner.control.PIDCoefficients;
+import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.localization.ThreeTrackingWheelLocalizer;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -14,6 +15,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.teamcode.util.AxesSigns;
 import org.firstinspires.ftc.teamcode.util.BNO055IMUUtil;
 import org.firstinspires.ftc.teamcode.util.LynxModuleUtil;
+import org.jetbrains.annotations.NotNull;
 import org.openftc.revextensions2.ExpansionHubEx;
 import org.openftc.revextensions2.ExpansionHubMotor;
 import org.openftc.revextensions2.RevBulkData;
@@ -56,7 +58,7 @@ public class SampleMecanumDriveREVOptimized extends SampleMecanumDriveBase {
         // upward (normal to the floor) using a command like the following:
          BNO055IMUUtil.remapAxes(imu, AxesOrder.XYZ, AxesSigns.NPN);
 
-        leftFront = hardwareMap.get(ExpansionHubMotor.class, "leftFront");
+         leftFront = hardwareMap.get(ExpansionHubMotor.class, "leftFront");
         leftRear = hardwareMap.get(ExpansionHubMotor.class, "leftRear");
         rightRear = hardwareMap.get(ExpansionHubMotor.class, "rightRear");
         rightFront = hardwareMap.get(ExpansionHubMotor.class, "rightFront");
@@ -84,6 +86,7 @@ public class SampleMecanumDriveREVOptimized extends SampleMecanumDriveBase {
         //setLocalizer(new MecanumLocalizer(this, true));
         ///setLocalizer(new MainMecanumLocalizer(this, true));
         // for instance, setLocalizer(new ThreeTrackingWheelLocalizer(...));
+
     }
 
     @Override

@@ -2,8 +2,17 @@ package org.firstinspires.ftc.teamcode.SQT_Programming;
 
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
-import org.firstinspires.ftc.teamcode.util.RoadRunnerAdditions;
+import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.teamcode.OldCode.Vector2Weighted;
+import org.firstinspires.ftc.teamcode.drive.mecanum.SampleMecanumDriveBase;
+import org.firstinspires.ftc.teamcode.drive.mecanum.SampleMecanumDriveREVOptimized;
+import org.firstinspires.ftc.teamcode.util.RoadRunnerAdditions;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
@@ -15,24 +24,89 @@ import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 import org.openftc.easyopencv.OpenCvInternalCamera;
 import org.openftc.easyopencv.OpenCvPipeline;
+
+
 import java.util.List;
 import java.util.ArrayList;
 
-public class TFB_Auto extends TFB_LinearOpMode {
+import static java.lang.Thread.sleep;
 
-    //**************** OPEN CV VARIABLES ****************
-    protected OpenCvCamera phoneCam;
-    protected Point one, two;
-    protected boolean[] stoneWall = {true, true, true, true, true, true}; // indicates presence of stones/skystones
-    protected int skystone1 = -1;
-    protected int skystone2 = -1;
+public class TFB_Auto extends TFB_LinearOpMode {
+   protected RoadRunnerAdditions roadrunner = new RoadRunnerAdditions();
+
+    BNO055IMU               imu;
+    Orientation             lastAngles = new Orientation();
+    double                  globalAngle,correction;
+
+
+    protected boolean foundBridge = false;
+   protected pointArray mainPoints = new pointArray();
+
+
+   protected String StoneOne = "S1";
+   protected String StoneTwo = "S2";
+   protected String StoneThree = "S3";
+   protected String StoneFour = "S4";
+   protected String StoneFive = "S5";
+   protected String StoneSix = "S6";
+   protected String DropoffPoint = "Dropoff Point";
+   protected String PlacementPoint = "Placement Point";
+   protected String latchOff = "latch";
+
+
+   protected OpenCvCamera phoneCam;
+   protected Point one, two;
+
+
+   protected boolean[] stoneWall = {true, true, true, true, true, true}; // indicates presence of stones/skystones
+   protected int skystone1 = -1;
+   protected int skystone2 = -1;
+
+
     protected Mat hsvThresholdOutput = new Mat();
     protected Mat blurOutput = new Mat();
     protected Mat cvErodeOutput = new Mat();
     protected double[] data1;
     protected double[] data2;
 
-    //**************** INHERITANCE VARIABLES ****************
+
+
+    protected Thread t1, t2;
+
+    protected enum DIRECTION {
+        LEFT, RIGHT
+    }
+    protected DIRECTION dir;
+    protected DIRECTION strafe_dir;
+
+    protected enum STARTING_POSITION {
+        LOADING_ZONE,
+        BUILDING_ZONE
+    }
+
+    protected enum ALLIANCE {
+        RED,
+        BLUE
+    }
+
+    protected enum UNDER_BRIDGE_POSITION {
+        WALL_SIDE,
+        NEUTRAL_SIDE
+    }
+
+    protected ALLIANCE alliance;
+    protected STARTING_POSITION starting_position;
+    protected UNDER_BRIDGE_POSITION under_bridge_position;
+
+    protected FOUNDATION_STATES foundation_states;
+
+    protected SKYSTONE_STATES skystone_state;
+    protected FOUNDATION_STATES foundation_state;
+
+    protected int threadStatus; // 0 means thread not started, 1 means thread running, 2 thread done
+
+
+
     protected enum SKYSTONE_STATES {
         FIRST_SKYSTONE,
         DROPOFF_FIRST_SKYSTONE,
@@ -47,10 +121,9 @@ public class TFB_Auto extends TFB_LinearOpMode {
         STONES_DONE,
         PARK,
         PULL_FOUNDATION,
-        DONE,
-        TURN_TO_FOUNDATION
 
     }
+
     enum FOUNDATION_STATES {
         STRAFE_LEFT,
         MOVE_TOWARD_FOUNDATION,
@@ -61,54 +134,7 @@ public class TFB_Auto extends TFB_LinearOpMode {
         STRAFE_OUT_OF_FOUNDATION,
         MOVE_TILL_BRIDGE
     }
-    protected enum DIRECTION {
-        LEFT, RIGHT
-    }
-    protected DIRECTION dir;
-    protected DIRECTION strafe_dir;
-    protected enum STARTING_POSITION {
-        LOADING_ZONE,
-        BUILDING_ZONE
-    }
-    protected enum ALLIANCE {
-        RED,
-        BLUE
-    }
-    protected enum UNDER_BRIDGE_POSITION {
-        WALL_SIDE,
-        NEUTRAL_SIDE
-    }
-    protected ALLIANCE alliance;
-    protected STARTING_POSITION starting_position;
-    protected UNDER_BRIDGE_POSITION under_bridge_position;
-    protected FOUNDATION_STATES foundation_states;
-    protected SKYSTONE_STATES skystone_state;
 
-    //**************** MISC. VARIABLES ****************
-
-    protected RoadRunnerAdditions roadrunner = new RoadRunnerAdditions();
-
-    protected boolean foundBridge = false;
-     pointArray skystonePoints = new pointArray();
-     pointArray foundationPoints = new pointArray();
-
-     String StoneOne;
-     String StoneTwo;
-     String StoneThree;
-     String StoneFour;
-     String StoneFive;
-     String StoneSix;
-     String DropoffPoint;
-     String PlacementPoint;
-     String FoundationPosition;
-     String WallSideParking;
-     String InTriangle;
-     String InFrontOfFoundation;
-     String SplitPoint; //This is to make it easier to park in the middle if necessary
-     String WallParkPoint;
-     String NeutralParkPoint;
-
-    
     @Override
     void initMethod()  {
         super.initMethod();
@@ -116,64 +142,27 @@ public class TFB_Auto extends TFB_LinearOpMode {
         roadrunner.initRobot(hardwareMap);
         one = new Point(200,400);
         two = new Point(325,400);
-        //One and two are the points that OpenCV uses to look for stone/skystone.
 
-        skystonePoints.add("S1", -8,30);
-        skystonePoints.add("S2", 0,30);
-        skystonePoints.add("S3", 8,30);
-        skystonePoints.add("S4", 16,30);
-        skystonePoints.add("S5", 24,30);
-        skystonePoints.add("S6", 32,30);
-        skystonePoints.add("Dropoff Point", -86,20);
-        skystonePoints.add("Placement Point", -86,28);
-        skystonePoints.add("Foundation Position",-80,-30);
-        skystonePoints.add("Wall Park", -15,-30);
-
-        StoneOne = "S1";
-        StoneTwo = "S2";
-        StoneThree = "S3";
-        StoneFour = "S4";
-        StoneFive = "S5";
-        StoneSix = "S6";
-        DropoffPoint = "Dropoff Point";
-        PlacementPoint = "Placement Point";
-        FoundationPosition = "Foundation Position";
-        WallSideParking = "Wall Park";
+        if(alliance == ALLIANCE.RED){
+            roadrunner.flipSides();
+        }
+        mainPoints.add("S1", -8,30);
+        mainPoints.add("S2", 0,30);
+        mainPoints.add("S3", 8,30);
+        mainPoints.add("S4", 16,30);
+        mainPoints.add("S5", 24,30);
+        mainPoints.add("S6", 32,30);
+        mainPoints.add("Dropoff Point", -86,24);
+        //mainPoints.add("Dropoff Point", -86,20);
+        mainPoints.add("Placement Point", -86,34);//30 is norm
+        mainPoints.add("Foundation Position",-80,0);
+        mainPoints.add("Wall Park", -15,0);
+        mainPoints.add("latch", -86,38);
     }
 
     @Override
     public void runOpMode() throws InterruptedException {
 
-/* *********** READ ***********
-    to move, use roadrunner.move
-    For example:
-    Vector2d[] path1 = new Vector2d[]{
-    new Vector2d(0,0),
-    new Vector2d(10,10)
-    };
-    roadrunner.move(path1)
-
-    OR
-    Vector2d point = new Vector2d(10,10);
-   roadrunner.move(point);
-    (This is more commonly used)
-
-    To turn, use roadrunner.turn(angle);
-
-    If you want to follow two trajectories without deaccelerating, using roadrunner.fastMove(pointA, pointB);
-
-    If you want to change your position, use roadrunner.setPosition(new Pose2d(x,y,rotation));
-
-    There is also an object called loading/skystone points. This stores points as Vector2ds with names as strings.
-    In this, you can call a point by the String name or the variable name using the .get function.
-    This will return a coordinate. You can also use .getBehind to get the point 10 inches behind the point(mainly for stones).
-
-    THINGS TO DO:
-    Foundation Side Points
-    Color Sensor mount/program setup
-    add support for close/far parking sides
- ****************************
-*/
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         phoneCam = OpenCvCameraFactory.getInstance().createInternalCamera(OpenCvInternalCamera.CameraDirection.BACK, cameraMonitorViewId);
         phoneCam.openCameraDevice();
@@ -189,123 +178,124 @@ public class TFB_Auto extends TFB_LinearOpMode {
                 switch(skystone_state){
 
                     case FIRST_SKYSTONE:
+                        rightSkystoneHand.setPosition(0.25);
                         skystone_state = SKYSTONE_STATES.DROPOFF_FIRST_SKYSTONE;
-                        roadrunner.move(skystonePoints.get(StoneTwo));
+                        roadrunner.move(new Vector2d[]{mainPoints.get("S2")});
                         switch (skystone1){
                             case 0:
-                                roadrunner.move(skystonePoints.get(StoneOne));
-                                PickUpStone();
-                                roadrunner.move(skystonePoints.getBehind(StoneOne));
+                                roadrunner.move(new Vector2d[]{mainPoints.get(StoneOne)});
+                                PickUp();
+                                roadrunner.move(new Vector2d[]{mainPoints.getBehind(StoneOne)});
                                 break;
                             case 1:
-                                roadrunner.move(skystonePoints.get(StoneTwo));
-                                PickUpStone();
-                                roadrunner.move(skystonePoints.getBehind(StoneTwo));
+                                roadrunner.move(new Vector2d[]{mainPoints.get(StoneTwo)});
+                                PickUp();
+                                roadrunner.move(new Vector2d[]{mainPoints.getBehind(StoneTwo)});
                                 break;
                             case 2:
-                                roadrunner.move(skystonePoints.get(StoneThree));
-                                PickUpStone();
-                                roadrunner.move(skystonePoints.getBehind(StoneThree));
+                                roadrunner.move(new Vector2d[]{mainPoints.get(StoneThree)});
+                                PickUp();
+                                roadrunner.move(new Vector2d[]{mainPoints.getBehind(StoneThree)});
                                 break;
+
+
                         }
                         break;
                     case DROPOFF_FIRST_SKYSTONE:
-                        roadrunner.move(skystonePoints.get(DropoffPoint));
-                        roadrunner.move(skystonePoints.get(PlacementPoint));
-                        DropOffStone();
+                        roadrunner.move(new Vector2d[]{mainPoints.get(DropoffPoint)});
+                        roadrunner.move(new Vector2d[]{mainPoints.get(PlacementPoint)});
+                        DropOff();
                         skystone_state = SKYSTONE_STATES.RESET_FOR_SECOND_SKYSTONE;
 
                         break;
                     case RESET_FOR_SECOND_SKYSTONE:
-                        roadrunner.move(skystonePoints.get(DropoffPoint));
+                        roadrunner.move(new Vector2d[]{mainPoints.get(DropoffPoint)});
+                        rightSkystoneHand.setPosition(0.25);
                         skystone_state = SKYSTONE_STATES.SECOND_SKYSTONE;
                         break;
                     case SECOND_SKYSTONE:
                         skystone_state = SKYSTONE_STATES.DROPOFF_SECOND_SKYSTONE;
                         switch (skystone2){
                             case 3:
-                                Vector2d[] goToStone = new Vector2d[]{skystonePoints.getBehind(StoneFour),skystonePoints.get(StoneFour)};
-                                roadrunner.move(goToStone);
-                                PickUpStone();
-                                roadrunner.move(skystonePoints.getBehind(StoneFour));
+                                roadrunner.move(new Vector2d[]{mainPoints.getBehind(StoneFour)});
+                                roadrunner.move(new Vector2d[]{mainPoints.get(StoneFour)});
+                                PickUp();
+                                roadrunner.move(new Vector2d[]{mainPoints.getBehind(StoneFour)});
+
+
                                 break;
                             case 4:
-                                goToStone = new Vector2d[]{skystonePoints.getBehind(StoneFive),skystonePoints.get(StoneFive)};
-                                roadrunner.move(goToStone);
-                                PickUpStone();
-                                roadrunner.move(skystonePoints.getBehind(StoneFive));
+                                roadrunner.move(new Vector2d[]{mainPoints.getBehind(StoneFive)});
+                                roadrunner.move(new Vector2d[]{mainPoints.get(StoneFive)});
+                                PickUp();
+                                roadrunner.move(new Vector2d[]{mainPoints.getBehind(StoneFive)});
+
+
                                 break;
                             case 5:
-                                goToStone = new Vector2d[]{skystonePoints.getBehind(StoneSix),skystonePoints.get(StoneSix)};
-                                roadrunner.move(goToStone);
-                                PickUpStone();
-                                roadrunner.move(skystonePoints.getBehind(StoneSix));
+                                roadrunner.move(new Vector2d[]{mainPoints.getBehind(StoneSix)});
+                                roadrunner.move(new Vector2d[]{mainPoints.get(StoneSix)});
+                                PickUp();
+                                roadrunner.move(new Vector2d[]{mainPoints.getBehind(StoneSix)});
                                 break;
                         }
                         break;
                     case DROPOFF_SECOND_SKYSTONE:
-                        Vector2d newDropoff = new Vector2d(skystonePoints.get(DropoffPoint).getX()+12,skystonePoints.get(DropoffPoint).getY());
-                        Vector2d newPlacement = new Vector2d(skystonePoints.get(PlacementPoint).getX()+12,skystonePoints.get(PlacementPoint).getY());
-                        //The Purpose of the "New" variables above is to make sure the skystones don't stack on the foundation and fall
-                        //The variables are points but shifted to the left(near the foundation) by 12 inches
+                        Vector2d newDropoff = new Vector2d(mainPoints.get(DropoffPoint).getX()+12,mainPoints.get(DropoffPoint).getY());
+                        Vector2d newPlacement = new Vector2d(mainPoints.get(PlacementPoint).getX()+12,mainPoints.get(PlacementPoint).getY());
                         roadrunner.move(new Vector2d[]{newDropoff,newPlacement});
-                        DropOffStone();
-                        roadrunner.move(newDropoff);
-                        skystone_state = SKYSTONE_STATES.TURN_TO_FOUNDATION;
-                        break;
-                        
-                    case TURN_TO_FOUNDATION:
-                        roadrunner.turn(-90);
+                        DropOff();
+                        roadrunner.move(new Vector2d[]{newDropoff});
                         skystone_state = SKYSTONE_STATES.PULL_FOUNDATION;
                         break;
                     case PULL_FOUNDATION:
-                        Vector2d foundationLatchPosition = new Vector2d(skystonePoints.get(PlacementPoint).getX()+12,skystonePoints.get(PlacementPoint).getY());
-                        foundationCaptureServoLeft.setPosition(0.4);
+                        Vector2d latchDropoff = new Vector2d(mainPoints.get(DropoffPoint).getX()+12,mainPoints.get(DropoffPoint).getY());
+                        Vector2d latchPlacement = new Vector2d(mainPoints.get(PlacementPoint).getX()+12,mainPoints.get(PlacementPoint).getY());
+
+                        roadrunner.turn(-90);
+
+                        foundationCaptureServoLeft.setPosition(0.3);
                         foundationCaptureServoRight.setPosition(0.7);
-                        //^ This is the "Half Latched" Position. This will ensure that the stones do not block the foundation servos
-                        roadrunner.move(foundationLatchPosition);
-                        foundationCaptureServoLeft.setPosition(0.05);
+
+                        roadrunner.move(new Vector2d[]{latchPlacement});
+                        foundationCaptureServoLeft.setPosition(0.1);
                         foundationCaptureServoRight.setPosition(0.85);
-                        //^ This is the Fully Latched Position
                         sleep(500);
-                        roadrunner.move(skystonePoints.get(FoundationPosition));
+                        roadrunner.move(new Vector2d[]{mainPoints.get("Foundation Position")});
                         foundationCaptureServoLeft.setPosition(0.6);
                         foundationCaptureServoRight.setPosition(0.3);
-                        //^ This is the Fully In Position
                         sleep(500);
+                        rightSkystoneHand.setPosition(0.25);
+                        roadrunner.move(new Vector2d[]{mainPoints.get("Wall Park")});
                         skystone_state = SKYSTONE_STATES.PARK;
                         break;
                     case PARK:
-                        roadrunner.move(skystonePoints.get(WallSideParking));
-                        skystone_state = SKYSTONE_STATES.DONE;
-                        break;
-                    case DONE:
-                        telemetry.addLine("Finished");
-                        telemetry.update();
                         break;
                 }
             }
             else if(starting_position == STARTING_POSITION.BUILDING_ZONE){
-                switch(foundation_states){
-                    case STRAFE_LEFT:
-                        break;
-                        
-                   /* STRAFE_LEFT,
-                            MOVE_TOWARD_FOUNDATION,
-                            LATCH_ARM,
-                            WAIT,
-                            BRING_FOUNDATION_BACK,
-                            UNLATCH_ARM,
-                            STRAFE_OUT_OF_FOUNDATION,
-                            MOVE_TILL_BRIDGE
-                    */
-                   
-                }
+
             }
 
         }
     }
-    
+
+
+    class ArmResetter implements Runnable {
+        public void run() {
+            if (alliance == ALLIANCE.BLUE) {
+                leftSkystoneHand.setPosition(0);
+                sleep(250);
+                leftSkystoneArm.setPosition(0);
+            }
+            else {
+            }
+        }
+    }
+
+
+
+
     void moveToStonesThroughBridge() {
         int red = colorSensor.red();
         int green = colorSensor.green();
@@ -482,7 +472,9 @@ public class TFB_Auto extends TFB_LinearOpMode {
             if(names.contains(getter)) {
                 double x  = points.get(names.indexOf(getter)).getX();
                 double y  = points.get(names.indexOf(getter)).getY();
-                return (new Vector2d(x,y-10));
+                return (new Vector2d(x,y-6));
+                //return (new Vector2d(x,y-10));
+
             }
             else{
                 telemetry.addLine("ERROR! The Point You Requested Does Not Exist");
@@ -502,11 +494,10 @@ public class TFB_Auto extends TFB_LinearOpMode {
         }
     }
 
-    
-    void PickUpStone(){
+    void PickUp(){
         if (alliance == ALLIANCE.BLUE) {
             rightSkystoneArm.setPosition(0.33333);
-            sleep(250);
+            sleep(500);
             rightSkystoneHand.setPosition(0.4);
             sleep(500);
             rightSkystoneArm.setPosition(0);
@@ -516,7 +507,7 @@ public class TFB_Auto extends TFB_LinearOpMode {
         }
     }
 
-    void DropOffStone(){
+    void DropOff(){
         if (alliance == ALLIANCE.BLUE) {
             rightSkystoneArm.setPosition(0.33333);
             sleep(250);
@@ -529,10 +520,67 @@ public class TFB_Auto extends TFB_LinearOpMode {
         }
     }
 
+    private double getAngle()
+    {
+        // We experimentally determined the Z axis is the axis we want to use for heading angle.
+        // We have to process the angle because the imu works in euler angles so the Z axis is
+        // returned as 0 to +180 or 0 to -180 rolling back to -179 or +179 when rotation passes
+        // 180 degrees. We detect this transition and track the total cumulative angle of rotation.
+
+        Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+
+        double deltaAngle = angles.firstAngle - lastAngles.firstAngle;
+
+        if (deltaAngle < -180)
+            deltaAngle += 360;
+        else if (deltaAngle > 180)
+            deltaAngle -= 360;
+
+        globalAngle += deltaAngle;
+
+        lastAngles = angles;
+
+        return globalAngle;
+    }
 
 
 
+    private void turn(int degrees, double power)
+    {
+        double leftPower,rightPower;
 
+        if (degrees < 0)
+        {   // turn right.
 
+            leftPower = power;
+            rightPower = -power;
+        }
+        else if (degrees > 0)
+        {   // turn left.
+            leftPower = -power;
+            rightPower = power;
+        }
+        else return;
+
+        // set power to rotate.
+        roadrunner.setMotorPowers(leftPower,rightPower,leftPower,rightPower);
+
+        // rotate until turn is completed.
+        if (degrees < 0)
+        {
+            // On right turn we have to get off zero first.
+            while (opModeIsActive() && getAngle() == 0) {}
+
+            while (opModeIsActive() && getAngle() > degrees) {}
+        }
+        else    // left turn.
+            while (opModeIsActive() && getAngle() < degrees) {}
+
+        // turn the motors off.
+        roadrunner.setMotorPowers(0,0,0,0);
+
+        sleep(1000);
+
+    }
 
 }

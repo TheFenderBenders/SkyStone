@@ -13,39 +13,37 @@ import kotlin.Unit;
 
 public class RoadRunnerAdditions extends LinearOpMode {
     SampleMecanumDriveBase drive;
-    double xScale = 1;
+
     double yScale = 1;
-    //The Scale Factors are meant to be used if the robot does not move the right amount but still moves in a linear amount.
+    double xScale = 1;
     public void runOpMode(){
 
     }
     public void initRobot(HardwareMap h){
         drive = new SampleMecanumDriveREVOptimized(h);
     }
-
+    public void setScale(double x, double y){
+        xScale = x;
+        yScale = y;
+    }
+    public void flipSides(){
+        xScale *= -1;
+    }
     public void move(Vector2d[] points){
-        for(Vector2d point:points){
+
+        for(int i = 0; i<points.length; i++){
+            Vector2d point = new Vector2d(points[i].getX()*xScale, points[i].getY()*yScale);
             drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(point).build());
         }
     }
 
-    public void move(Vector2d point){
-            drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(point).build());
-
-    }
-
-    public void move(double x, double y){
-        drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(new Vector2d(x,y)).build());
-    }
-
-
 
     public void setPosition(int x, int y){
-        drive.setPoseEstimate(new Pose2d(x,y));
+        drive.setPoseEstimate(new Pose2d(x*xScale,y*yScale));
     }
 
     public void turn(double angle){
-        drive.turnSync(Math.toRadians(angle));
+        drive.turnSync(Math.toRadians(angle*(Math.abs(xScale)/xScale)));
     }
     public boolean busy(){
         return drive.isBusy();
@@ -53,24 +51,13 @@ public class RoadRunnerAdditions extends LinearOpMode {
     public void setMotorPowers(double a, double b, double c, double d){drive.setMotorPowers(a,b,c,d);}
 
     public void fastMove(Vector2d pointA, Vector2d pointB){
-        drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(pointA).
+        drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(new Vector2d(pointA.getX()*xScale, pointA.getY()*yScale)).
                 addMarker(pointA, () -> {
                    sleep(250);
 
                     return Unit.INSTANCE;
                 })
-                .strafeTo(pointB).build());
+                .strafeTo(new Vector2d(pointB.getX()*xScale,pointB.getY()*yScale)).build());
     }
-
-    public void fastMove(double pointAX, double pointAY, double pointBX, double pointBY){
-        drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(new Vector2d(pointAX,pointAY)).
-                addMarker(new Vector2d(pointAX,pointAY), () -> {
-                    sleep(250);
-
-                    return Unit.INSTANCE;
-                })
-                .strafeTo(new Vector2d(pointBX,pointBY)).build());
-    }
-
 
 }

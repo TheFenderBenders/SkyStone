@@ -27,17 +27,16 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.SQT_Programming;
 
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.qualcomm.robotcore.util.Range;
-import com.qualcomm.robotcore.hardware.*;
 
-import org.openftc.revextensions2.ExpansionHubMotor;
+import org.firstinspires.ftc.teamcode.OldCode.DotStarBridgedLED;
 
 /**
  * This file contains an example of an iterative (Non-Linear) "OpMode".
@@ -53,29 +52,41 @@ import org.openftc.revextensions2.ExpansionHubMotor;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@TeleOp(name="QT Tele", group="Iterative Opmode")
+@TeleOp(name="Current SQT Tele", group="Iterative Opmode")
 
-public class QT_TeleOp_Iterative extends OpMode
+public class SQT_Tele extends OpMode
 {
+    DotStarBridgedLED blinkinLedDriver;
+
     private ElapsedTime runtime = new ElapsedTime();
     private DcMotor leftFront = null;
     private DcMotor rightFront = null;
     private  DcMotor leftBack = null;
     private  DcMotor rightBack = null;
+    DcMotor leftIntake = null;
+    DcMotor rightIntake = null;
+    Servo grabber = null;
+    DcMotor slide = null;
+    Servo swing = null;
+    Servo capping = null;
+    ElapsedTime slideTimer = new ElapsedTime();
+    ElapsedTime internalSlideTimer = new ElapsedTime();
 
-    DcMotor slideServo = null;
-    CRServo armServo = null;
-    Servo handServo = null;
-    Servo leftFoundServo = null;
-    Servo rightFoundServo = null;
-    Servo leftSkystoneServo = null;
-    Servo rightSkystoneServo = null;
+    boolean slideMovement = false;
+    ElapsedTime reverseTimer = new ElapsedTime();
 
+    int leftStickReverse = 1;
 
+    int lit = 0;
     @Override
     public void init() {
+        //blinkinLedDriver = hardwareMap.get(DotStarBridgedLED.class, "driver");
+
         telemetry.addData("Status", "Initialized");
 
+        leftIntake = hardwareMap.get(DcMotor.class, "lIntake");
+        rightIntake = hardwareMap.get(DcMotor.class, "rIntake");
+        grabber = hardwareMap.get(Servo.class, "grabber");
         // Initialize the hardware variables. Note that the strings used here as parameters
         // to 'get' must correspond to the names assigned during the robot configuration
         // step (using the FTC Robot Controller app on the phone).
@@ -83,27 +94,23 @@ public class QT_TeleOp_Iterative extends OpMode
         leftBack = hardwareMap.get(DcMotor.class, "leftRear");
         rightBack = hardwareMap.get(DcMotor.class, "rightRear");
         rightFront = hardwareMap.get(DcMotor.class, "rightFront");
-
-
-        slideServo = hardwareMap.get(DcMotor.class,"slide");
-        armServo = hardwareMap.get(CRServo.class, "arm");
-        handServo = hardwareMap.get(Servo.class, "hand");
-        leftFoundServo = hardwareMap.get(Servo.class,"l_foundation");
-        rightFoundServo = hardwareMap.get(Servo.class,"r_foundation");
-
-        leftSkystoneServo = hardwareMap.get(Servo.class, "l_skystone");
-        rightSkystoneServo = hardwareMap.get(Servo.class, "r_skystone");
+        slide = hardwareMap.get(DcMotor.class, "slide");
+        swing = hardwareMap.get(Servo.class, "swing");
 
 
 
 
-        // Most robots need the motor on one side to be reversed to drive forward
+        // Most robots need the motor on one side to be reversed, to drive forward
         // Reverse the motor that runs backwards when connected directly to the battery
         leftFront.setDirection(DcMotor.Direction.REVERSE);
         rightFront.setDirection(DcMotor.Direction.FORWARD);
         rightBack.setDirection(DcMotor.Direction.FORWARD);
         leftBack.setDirection(DcMotor.Direction.REVERSE);
+        rightIntake.setDirection(DcMotorSimple.Direction.REVERSE);
         //rightBack.setDirection(DcMotor.Direction.REVERSE);
+
+
+
     }
 
     /*
@@ -111,6 +118,7 @@ public class QT_TeleOp_Iterative extends OpMode
      */
     @Override
     public void init_loop() {
+
     }
 
     /*
@@ -118,7 +126,13 @@ public class QT_TeleOp_Iterative extends OpMode
      */
     @Override
     public void start() {
+        reverseTimer.reset();
+        slideTimer.reset();
         runtime.reset();
+        internalSlideTimer.reset();
+
+
+
     }
 
     /*
@@ -126,63 +140,123 @@ public class QT_TeleOp_Iterative extends OpMode
      */
     @Override
     public void loop() {
-        //GAMEPAD # 2 CONTROLS  This includes The Linear Slide, the Arm, and the Foundation Servos.
-
-
-        if(gamepad2.left_stick_button){
-            slideServo.setPower(Range.clip(-gamepad2.left_stick_y,-0.5,0.75));
+/*
+        //blinkinLedDriver.pixels[lit] = new DotStarBridgedLED.Pixel(255,150,0);
+        if(lit<blinkinLedDriver.pixels.length){
+            lit ++;
         }
         else{
-            slideServo.setPower(Range.clip(-gamepad2.left_stick_y/4,-0.5,0.75));
+            lit = 0;
         }
 
-        if(gamepad1.right_bumper) {
+ */
 
-            rightFoundServo.setPosition(0);
-            leftFoundServo.setPosition(0);
-
+        if(gamepad2.left_bumper){
+            grabber.setPosition(0);
+        }
+        else if (gamepad2.right_bumper){
+            grabber.setPosition(0.23);
         }
 
-        if(gamepad1.left_bumper){
-
-            rightFoundServo.setPosition(0.35);
-            leftFoundServo.setPosition(0.35);
+        if(gamepad2.left_stick_button) {
+            slide.setPower(-gamepad2.left_stick_y*4);
         }
-
-        if(gamepad2.x){
-            rightFoundServo.setPosition(0);
-            leftFoundServo.setPosition(0);
+        else{
+            slide.setPower(-gamepad2.left_stick_y*0.25);
         }
-
-        armServo.setPower(gamepad2.right_stick_y);
-
-
-//GAMEPAD # 1 CONTROLS:This includes Movement(Strafing), the hand movement, and the skystone Servo
-
-
+    //slide is negative because of way string was strung
         if(gamepad1.a){
-            leftSkystoneServo.setPosition(0.35);
-            rightSkystoneServo.setPosition(0);
-        }
-        else if(gamepad1.y){
-            leftSkystoneServo.setPosition(0);
-            rightSkystoneServo.setPosition(0.35);
+            if(reverseTimer.milliseconds()>500){
+                reverseMotors();
+                reverseTimer.reset();
+            }
         }
 
 
-        if(gamepad2.right_bumper){
-            handServo.setPosition(0);
+        if(gamepad2.x)swing.setPosition(0);
+        if(gamepad2.b)swing.setPosition(0.666666);
+
+
+
+
+      //ishan on intake
+      //me on grabber
+
+      if(gamepad1.right_trigger!=0){
+            leftIntake.setPower(-gamepad1.right_trigger);
+            rightIntake.setPower(gamepad1.right_trigger);
         }
-        else if(gamepad2.left_bumper){
-            handServo.setPosition(0.35);
+        else if (gamepad1.left_trigger!=0){
+            rightIntake.setPower(-gamepad1.left_trigger);
+            leftIntake.setPower(gamepad1.left_trigger);
+        }
+        else{
+            leftIntake.setPower(0);
+            rightIntake.setPower(0);
         }
 
 
 
 
-        double gx = -gamepad1.left_stick_x;
-        double gy = gamepad1.left_stick_y;
+
+        telemetry.addData("Grabber Position", grabber.getPosition());
+        telemetry.update();
+
+
+
+
+        if(gamepad2.a){
+
+            if(slideTimer.milliseconds()>1000) {
+                internalSlideTimer.reset();
+                slide.setPower(0.35);
+                slideMovement = true;
+            }
+        }
+        if(slideMovement){
+            if(slideTimer.milliseconds()>500){
+                slide.setPower(0);
+                if(swing.getPosition()==0){
+                    swing.setPosition(0.666666);
+                }
+                else{
+                    swing.setPosition(0);
+                }
+                slideMovement = false;
+                slideTimer.reset();
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+        double gx = 0.25*leftStickReverse * gamepad1.left_stick_x;
+        double gy = -0.25*leftStickReverse * gamepad1.left_stick_y;
+
+        if(gamepad1.left_stick_button) {
+             gx = 0.25*leftStickReverse * gamepad1.left_stick_x;
+             gy = -0.25*leftStickReverse * gamepad1.left_stick_y;
+        }
+        else{
+             gx = leftStickReverse * gamepad1.left_stick_x;
+             gy = -leftStickReverse * gamepad1.left_stick_y;
+        }
+
+
         double rx = gamepad1.right_stick_x;
+
+        if(gamepad1.right_stick_button){
+            rx = gamepad1.right_stick_x*0.25;
+        }
+        else{
+            rx = gamepad1.right_stick_x;
+        }
 
         double r = Math.hypot(gx, gy);
 
@@ -209,6 +283,8 @@ public class QT_TeleOp_Iterative extends OpMode
 
         telemetry.addData("Status", "Run Time: " + runtime.toString());
         telemetry.update();
+
+
     }
 
     /*
@@ -217,5 +293,24 @@ public class QT_TeleOp_Iterative extends OpMode
     @Override
     public void stop() {
     }
+
+
+
+    void reverseMotors(){
+        leftStickReverse = - leftStickReverse;
+    }
+
+
+    class SlideThread implements Runnable{
+        @Override
+        public void run() {
+
+        }
+    }
+
+
+
+
+
 
 }
