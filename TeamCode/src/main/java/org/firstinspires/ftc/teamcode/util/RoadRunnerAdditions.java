@@ -43,7 +43,7 @@ public class RoadRunnerAdditions extends LinearOpMode {
     }
 
     public void turn(double angle){
-        drive.turnSync(Math.toRadians(angle*(Math.abs(xScale)/xScale)));
+        drive.turnSync(Math.toRadians(angle));
     }
     public boolean busy(){
         return drive.isBusy();

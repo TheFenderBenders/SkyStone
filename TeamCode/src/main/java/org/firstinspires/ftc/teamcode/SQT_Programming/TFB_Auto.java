@@ -137,12 +137,23 @@ public class TFB_Auto extends TFB_LinearOpMode {
 
     @Override
     void initMethod()  {
+        if(alliance == ALLIANCE.RED){
+            redSide = true;
+        }
+        else{
+            redSide = false;
+        }
         super.initMethod();
         skystone_state = SKYSTONE_STATES.FIRST_SKYSTONE;
         roadrunner.initRobot(hardwareMap);
-        one = new Point(200,400);
-        two = new Point(325,400);
-
+        if(alliance == ALLIANCE.BLUE) {
+            two = new Point(200, 400);
+            one = new Point(325, 400);
+        }
+        else{
+            two = new Point(150, 350);
+            one = new Point(275, 350);
+        }
         if(alliance == ALLIANCE.RED){
             roadrunner.flipSides();
         }
@@ -157,7 +168,7 @@ public class TFB_Auto extends TFB_LinearOpMode {
         mainPoints.add("Placement Point", -86,34);//30 is norm
         mainPoints.add("Foundation Position",-80,0);
         mainPoints.add("Wall Park", -15,0);
-        mainPoints.add("latch", -86,38);
+        mainPoints.add("latch", -86,40);
     }
 
     @Override
@@ -178,7 +189,12 @@ public class TFB_Auto extends TFB_LinearOpMode {
                 switch(skystone_state){
 
                     case FIRST_SKYSTONE:
-                        rightSkystoneHand.setPosition(0.25);
+                        if(alliance == ALLIANCE.BLUE) {
+                            rightSkystoneHand.setPosition(0.25);
+                        }
+                        else{
+                            leftSkystoneHand.setPosition(0.18);
+                        }
                         skystone_state = SKYSTONE_STATES.DROPOFF_FIRST_SKYSTONE;
                         roadrunner.move(new Vector2d[]{mainPoints.get("S2")});
                         switch (skystone1){
@@ -210,7 +226,12 @@ public class TFB_Auto extends TFB_LinearOpMode {
                         break;
                     case RESET_FOR_SECOND_SKYSTONE:
                         roadrunner.move(new Vector2d[]{mainPoints.get(DropoffPoint)});
-                        rightSkystoneHand.setPosition(0.25);
+                        if(alliance == ALLIANCE.BLUE) {
+                            rightSkystoneHand.setPosition(0.25);
+                        }
+                        else{
+                            leftSkystoneHand.setPosition(0.18);
+                        }
                         skystone_state = SKYSTONE_STATES.SECOND_SKYSTONE;
                         break;
                     case SECOND_SKYSTONE:
@@ -252,7 +273,19 @@ public class TFB_Auto extends TFB_LinearOpMode {
                         Vector2d latchDropoff = new Vector2d(mainPoints.get(DropoffPoint).getX()+12,mainPoints.get(DropoffPoint).getY());
                         Vector2d latchPlacement = new Vector2d(mainPoints.get(PlacementPoint).getX()+12,mainPoints.get(PlacementPoint).getY());
 
-                        roadrunner.turn(-90);
+                        if(alliance == ALLIANCE.BLUE) {
+                            rightSkystoneHand.setPosition(0.25);
+                        }
+                        else{
+                            leftSkystoneHand.setPosition(0.18);
+                        }
+
+                        if(alliance == ALLIANCE.BLUE) {
+                            roadrunner.turn(90);
+                        }
+                        else{
+                            roadrunner.turn(-90);
+                        }
 
                         foundationCaptureServoLeft.setPosition(0.3);
                         foundationCaptureServoRight.setPosition(0.7);
@@ -265,8 +298,8 @@ public class TFB_Auto extends TFB_LinearOpMode {
                         foundationCaptureServoLeft.setPosition(0.6);
                         foundationCaptureServoRight.setPosition(0.3);
                         sleep(500);
-                        rightSkystoneHand.setPosition(0.25);
-                        roadrunner.move(new Vector2d[]{mainPoints.get("Wall Park")});
+
+                       // roadrunner.move(new Vector2d[]{mainPoints.get("Wall Park")});
                         skystone_state = SKYSTONE_STATES.PARK;
                         break;
                     case PARK:
@@ -504,6 +537,11 @@ public class TFB_Auto extends TFB_LinearOpMode {
 
         }
         else {
+            leftSkystoneArm.setPosition(0);
+            sleep(500);
+            leftSkystoneHand.setPosition(0);
+            sleep(500);
+            leftSkystoneArm.setPosition(0.4);
         }
     }
 
@@ -517,70 +555,14 @@ public class TFB_Auto extends TFB_LinearOpMode {
 
         }
         else {
+            leftSkystoneArm.setPosition(0);
+            sleep(500);
+            leftSkystoneHand.setPosition(0.4);
+            sleep(500);
+            leftSkystoneArm.setPosition(0.4);
         }
     }
 
-    private double getAngle()
-    {
-        // We experimentally determined the Z axis is the axis we want to use for heading angle.
-        // We have to process the angle because the imu works in euler angles so the Z axis is
-        // returned as 0 to +180 or 0 to -180 rolling back to -179 or +179 when rotation passes
-        // 180 degrees. We detect this transition and track the total cumulative angle of rotation.
 
-        Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-
-        double deltaAngle = angles.firstAngle - lastAngles.firstAngle;
-
-        if (deltaAngle < -180)
-            deltaAngle += 360;
-        else if (deltaAngle > 180)
-            deltaAngle -= 360;
-
-        globalAngle += deltaAngle;
-
-        lastAngles = angles;
-
-        return globalAngle;
-    }
-
-
-
-    private void turn(int degrees, double power)
-    {
-        double leftPower,rightPower;
-
-        if (degrees < 0)
-        {   // turn right.
-
-            leftPower = power;
-            rightPower = -power;
-        }
-        else if (degrees > 0)
-        {   // turn left.
-            leftPower = -power;
-            rightPower = power;
-        }
-        else return;
-
-        // set power to rotate.
-        roadrunner.setMotorPowers(leftPower,rightPower,leftPower,rightPower);
-
-        // rotate until turn is completed.
-        if (degrees < 0)
-        {
-            // On right turn we have to get off zero first.
-            while (opModeIsActive() && getAngle() == 0) {}
-
-            while (opModeIsActive() && getAngle() > degrees) {}
-        }
-        else    // left turn.
-            while (opModeIsActive() && getAngle() < degrees) {}
-
-        // turn the motors off.
-        roadrunner.setMotorPowers(0,0,0,0);
-
-        sleep(1000);
-
-    }
 
 }

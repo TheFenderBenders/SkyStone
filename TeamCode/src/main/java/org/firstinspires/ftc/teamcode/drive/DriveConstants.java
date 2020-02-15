@@ -35,7 +35,7 @@ public class DriveConstants {
      * MOTOR_VELO_PID with the tuned coefficients from DriveVelocityPIDTuner.
      */
     public static final boolean RUN_USING_ENCODER = true;
-    public static PIDCoefficients MOTOR_VELO_PID = new PIDCoefficients(25,0,5);
+    public static PIDCoefficients MOTOR_VELO_PID = new PIDCoefficients(29,0,11);
 
     /*
      * These are physical constants that can be determined from your robot (including the track
@@ -68,7 +68,7 @@ public class DriveConstants {
      * forces acceleration-limited profiling).
      */
     public static DriveConstraints BASE_CONSTRAINTS = new DriveConstraints(
-            50.0, 50.0, 0.0,
+            40.0, 40.0, 0.0,
             Math.toRadians(180.0), Math.toRadians(180.0), 0.0
     );
 
@@ -85,6 +85,7 @@ public class DriveConstants {
         return MOTOR_CONFIG.getMaxRPM() *
                 (RUN_USING_ENCODER ? MOTOR_CONFIG.getAchieveableMaxRPMFraction() : 1.0);
     }
+
 
     public static double getTicksPerSec() {
         // note: MotorConfigurationType#getAchieveableMaxTicksPerSecond() isn't quite what we want
