@@ -37,11 +37,24 @@ public class RoadRunnerAdditions extends LinearOpMode {
         }
     }
 
+    public void move(Vector2d point){
+        drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(point).build());
+    }
+    public void move(double x, double y){
+        drive.followTrajectorySync(drive.trajectoryBuilder().strafeTo(new Vector2d(x,y)).build());
+    }
 
-    public void setPosition(int x, int y){
+
+    public void setPosition(double x, double y){
         drive.setPoseEstimate(new Pose2d(x*xScale,y*yScale));
     }
 
+    public void strafeLeft(double length){
+        drive.followTrajectorySync(drive.trajectoryBuilder().strafeLeft(length).build());
+    }
+    public void forward(double distance){
+        drive.followTrajectorySync(drive.trajectoryBuilder().forward(distance).build());
+    }
     public void turn(double angle){
         drive.turnSync(Math.toRadians(angle));
     }

@@ -96,6 +96,7 @@ public class SQT_Tele extends OpMode
         rightFront = hardwareMap.get(DcMotor.class, "rightFront");
         slide = hardwareMap.get(DcMotor.class, "slide");
         swing = hardwareMap.get(Servo.class, "swing");
+        capping = hardwareMap.get(Servo.class, "capping");
 
 
 
@@ -179,9 +180,6 @@ public class SQT_Tele extends OpMode
 
 
 
-      //ishan on intake
-      //me on grabber
-
       if(gamepad1.right_trigger!=0){
             leftIntake.setPower(-gamepad1.right_trigger);
             rightIntake.setPower(gamepad1.right_trigger);
@@ -196,11 +194,12 @@ public class SQT_Tele extends OpMode
         }
 
 
-
-
-
-        telemetry.addData("Grabber Position", grabber.getPosition());
-        telemetry.update();
+        if(gamepad2.dpad_up){
+            capping.setPosition(0.6);
+        }
+        else if(gamepad2.dpad_down){
+            capping.setPosition(0.2);
+        }
 
 
 

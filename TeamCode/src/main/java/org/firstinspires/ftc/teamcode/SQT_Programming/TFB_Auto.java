@@ -29,53 +29,36 @@ import org.openftc.easyopencv.OpenCvPipeline;
 import java.util.List;
 import java.util.ArrayList;
 
-import static java.lang.Thread.sleep;
 
 public class TFB_Auto extends TFB_LinearOpMode {
-   protected RoadRunnerAdditions roadrunner = new RoadRunnerAdditions();
+/**************** READ ME *************
+    This autonomous program uses 2 unique features:
+    First, it uses inheritance. This means the whole of the program is in TFB_LinearOpMode,
+    TFB_Auto, and another program, named  [ALLIANCE]_[STARTING SIDE]_[(OPTIONAL)PARKING_POSITION]
+    Most of the code, however, is in TFB_Auto.
 
-    BNO055IMU               imu;
-    Orientation             lastAngles = new Orientation();
-    double                  globalAngle,correction;
-
-
-    protected boolean foundBridge = false;
-   protected pointArray mainPoints = new pointArray();
+    It also uses RoadRunnerAdditions, a class created to make programming roadrunner easier.
 
 
-   protected String StoneOne = "S1";
-   protected String StoneTwo = "S2";
-   protected String StoneThree = "S3";
-   protected String StoneFour = "S4";
-   protected String StoneFive = "S5";
-   protected String StoneSix = "S6";
-   protected String DropoffPoint = "Dropoff Point";
-   protected String PlacementPoint = "Placement Point";
-   protected String latchOff = "latch";
 
+ */
 
-   protected OpenCvCamera phoneCam;
-   protected Point one, two;
-
-
-   protected boolean[] stoneWall = {true, true, true, true, true, true}; // indicates presence of stones/skystones
-   protected int skystone1 = -1;
-   protected int skystone2 = -1;
-
-
+//**********     OPEN CV     **********
+    protected OpenCvCamera phoneCam;
+    protected Point one, two;
+    protected boolean[] stoneWall = {true, true, true, true, true, true}; // indicates presence of stones/skystones
+    protected int skystone1 = -1;
+    protected int skystone2 = -1;
     protected Mat hsvThresholdOutput = new Mat();
     protected Mat blurOutput = new Mat();
     protected Mat cvErodeOutput = new Mat();
     protected double[] data1;
     protected double[] data2;
 
-
-
-    protected Thread t1, t2;
-
-    protected enum DIRECTION {
-        LEFT, RIGHT
-    }
+//**********     INHERITANCE     **********
+protected enum DIRECTION {
+    LEFT, RIGHT
+}
     protected DIRECTION dir;
     protected DIRECTION strafe_dir;
 
@@ -135,6 +118,24 @@ public class TFB_Auto extends TFB_LinearOpMode {
         MOVE_TILL_BRIDGE
     }
 
+//**********     POINTS     **********
+    protected pointArray mainPoints = new pointArray();
+    protected String StoneOne = "S1";
+    protected String StoneTwo = "S2";
+    protected String StoneThree = "S3";
+    protected String StoneFour = "S4";
+    protected String StoneFive = "S5";
+    protected String StoneSix = "S6";
+    protected String DropoffPoint = "Dropoff Point";
+    protected String PlacementPoint = "Placement Point";
+    protected String latchOff = "latch";
+    protected String FoundationPosition = "Foundation Position";
+    protected String LeftFoundation = "lf";
+
+//**********     MISC.     **********
+    protected RoadRunnerAdditions roadrunner = new RoadRunnerAdditions();
+    protected boolean foundBridge = false;
+
     @Override
     void initMethod()  {
         if(alliance == ALLIANCE.RED){
@@ -147,8 +148,8 @@ public class TFB_Auto extends TFB_LinearOpMode {
         skystone_state = SKYSTONE_STATES.FIRST_SKYSTONE;
         roadrunner.initRobot(hardwareMap);
         if(alliance == ALLIANCE.BLUE) {
-            two = new Point(200, 400);
-            one = new Point(325, 400);
+            one = new Point(200, 350);
+            two = new Point(325, 350);
         }
         else{
             two = new Point(150, 350);
@@ -164,11 +165,11 @@ public class TFB_Auto extends TFB_LinearOpMode {
         mainPoints.add("S5", 24,30);
         mainPoints.add("S6", 32,30);
         mainPoints.add("Dropoff Point", -86,24);
-        //mainPoints.add("Dropoff Point", -86,20);
         mainPoints.add("Placement Point", -86,34);//30 is norm
-        mainPoints.add("Foundation Position",-80,0);
+        mainPoints.add("Foundation Position",-92,0);
         mainPoints.add("Wall Park", -15,0);
         mainPoints.add("latch", -86,40);
+        mainPoints.add("lf", -92,24);
     }
 
     @Override
@@ -182,6 +183,7 @@ public class TFB_Auto extends TFB_LinearOpMode {
         phoneCam.startStreaming(640, 480, OpenCvCameraRotation.UPSIDE_DOWN);
 
         waitForStart();
+
         phoneCam.stopStreaming();
         while (opModeIsActive()) {
 
@@ -196,36 +198,36 @@ public class TFB_Auto extends TFB_LinearOpMode {
                             leftSkystoneHand.setPosition(0.18);
                         }
                         skystone_state = SKYSTONE_STATES.DROPOFF_FIRST_SKYSTONE;
-                        roadrunner.move(new Vector2d[]{mainPoints.get("S2")});
+                        roadrunner.move(mainPoints.get(StoneTwo));
                         switch (skystone1){
                             case 0:
-                                roadrunner.move(new Vector2d[]{mainPoints.get(StoneOne)});
+                                roadrunner.move(mainPoints.get(StoneOne));
                                 PickUp();
-                                roadrunner.move(new Vector2d[]{mainPoints.getBehind(StoneOne)});
+                                roadrunner.move(mainPoints.getBehind(StoneOne));
                                 break;
                             case 1:
-                                roadrunner.move(new Vector2d[]{mainPoints.get(StoneTwo)});
+                                roadrunner.move(mainPoints.get(StoneTwo));
                                 PickUp();
-                                roadrunner.move(new Vector2d[]{mainPoints.getBehind(StoneTwo)});
+                                roadrunner.move(mainPoints.getBehind(StoneTwo));
                                 break;
                             case 2:
-                                roadrunner.move(new Vector2d[]{mainPoints.get(StoneThree)});
+                                roadrunner.move(mainPoints.get(StoneThree));
                                 PickUp();
-                                roadrunner.move(new Vector2d[]{mainPoints.getBehind(StoneThree)});
+                                roadrunner.move(mainPoints.getBehind(StoneThree));
                                 break;
 
 
                         }
                         break;
                     case DROPOFF_FIRST_SKYSTONE:
-                        roadrunner.move(new Vector2d[]{mainPoints.get(DropoffPoint)});
-                        roadrunner.move(new Vector2d[]{mainPoints.get(PlacementPoint)});
+                        roadrunner.move(mainPoints.get(DropoffPoint));
+                        roadrunner.move(mainPoints.get(PlacementPoint));
                         DropOff();
                         skystone_state = SKYSTONE_STATES.RESET_FOR_SECOND_SKYSTONE;
 
                         break;
                     case RESET_FOR_SECOND_SKYSTONE:
-                        roadrunner.move(new Vector2d[]{mainPoints.get(DropoffPoint)});
+                        roadrunner.move(mainPoints.get(DropoffPoint));
                         if(alliance == ALLIANCE.BLUE) {
                             rightSkystoneHand.setPosition(0.25);
                         }
@@ -238,26 +240,30 @@ public class TFB_Auto extends TFB_LinearOpMode {
                         skystone_state = SKYSTONE_STATES.DROPOFF_SECOND_SKYSTONE;
                         switch (skystone2){
                             case 3:
-                                roadrunner.move(new Vector2d[]{mainPoints.getBehind(StoneFour)});
-                                roadrunner.move(new Vector2d[]{mainPoints.get(StoneFour)});
+                                roadrunner.move(new Vector2d[]{
+                                        mainPoints.getBehind(StoneFour),
+                                        mainPoints.get(StoneFour)
+                                });
                                 PickUp();
-                                roadrunner.move(new Vector2d[]{mainPoints.getBehind(StoneFour)});
+                                roadrunner.move(mainPoints.getBehind(StoneFour));
 
 
                                 break;
                             case 4:
-                                roadrunner.move(new Vector2d[]{mainPoints.getBehind(StoneFive)});
-                                roadrunner.move(new Vector2d[]{mainPoints.get(StoneFive)});
+                                roadrunner.move(new Vector2d[]{
+                                        mainPoints.getBehind(StoneFive), mainPoints.get(StoneFive)
+                                });
                                 PickUp();
-                                roadrunner.move(new Vector2d[]{mainPoints.getBehind(StoneFive)});
+                                roadrunner.move(mainPoints.getBehind(StoneFive));
 
 
                                 break;
                             case 5:
-                                roadrunner.move(new Vector2d[]{mainPoints.getBehind(StoneSix)});
-                                roadrunner.move(new Vector2d[]{mainPoints.get(StoneSix)});
+                                roadrunner.move(new Vector2d[]{
+                                        mainPoints.getBehind(StoneSix), mainPoints.get(StoneSix)
+                                });
                                 PickUp();
-                                roadrunner.move(new Vector2d[]{mainPoints.getBehind(StoneSix)});
+                                roadrunner.move(mainPoints.getBehind(StoneSix));
                                 break;
                         }
                         break;
@@ -270,8 +276,8 @@ public class TFB_Auto extends TFB_LinearOpMode {
                         skystone_state = SKYSTONE_STATES.PULL_FOUNDATION;
                         break;
                     case PULL_FOUNDATION:
-                        Vector2d latchDropoff = new Vector2d(mainPoints.get(DropoffPoint).getX()+12,mainPoints.get(DropoffPoint).getY());
-                        Vector2d latchPlacement = new Vector2d(mainPoints.get(PlacementPoint).getX()+12,mainPoints.get(PlacementPoint).getY());
+                        Vector2d latchDropoff = new Vector2d(mainPoints.get(DropoffPoint).getX()+12,mainPoints.get(DropoffPoint).getY()+4);
+                        Vector2d latchPlacement = new Vector2d(mainPoints.get(PlacementPoint).getX()+12,mainPoints.get(PlacementPoint).getY()+4);
 
                         if(alliance == ALLIANCE.BLUE) {
                             rightSkystoneHand.setPosition(0.25);
@@ -281,20 +287,21 @@ public class TFB_Auto extends TFB_LinearOpMode {
                         }
 
                         if(alliance == ALLIANCE.BLUE) {
-                            roadrunner.turn(90);
+                            roadrunner.turn(-90);
                         }
                         else{
                             roadrunner.turn(-90);
                         }
-
+                        roadrunner.strafeLeft(-12);
+                        roadrunner.forward(-16);
                         foundationCaptureServoLeft.setPosition(0.3);
                         foundationCaptureServoRight.setPosition(0.7);
 
-                        roadrunner.move(new Vector2d[]{latchPlacement});
+                        roadrunner.move(latchPlacement);
                         foundationCaptureServoLeft.setPosition(0.1);
                         foundationCaptureServoRight.setPosition(0.85);
                         sleep(500);
-                        roadrunner.move(new Vector2d[]{mainPoints.get("Foundation Position")});
+                        roadrunner.move(mainPoints.get(FoundationPosition));
                         foundationCaptureServoLeft.setPosition(0.6);
                         foundationCaptureServoRight.setPosition(0.3);
                         sleep(500);
