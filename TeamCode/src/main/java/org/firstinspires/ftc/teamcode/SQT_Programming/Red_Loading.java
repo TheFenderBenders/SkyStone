@@ -2,7 +2,7 @@ package org.firstinspires.ftc.teamcode.SQT_Programming;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
-@Autonomous
+@Autonomous(group = "A")
 public class Red_Loading extends TFB_Auto{
     @Override
     public void initMethod() {

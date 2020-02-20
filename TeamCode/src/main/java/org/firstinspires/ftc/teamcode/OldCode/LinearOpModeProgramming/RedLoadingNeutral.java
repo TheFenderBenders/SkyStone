@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.OldCode.LinearOpModeProgramming;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -29,6 +30,7 @@ import java.util.List;
 /*
  * This is a simple routine to test translational drive capabilities.
  */
+@Disabled
 @Autonomous(name= "Red Loading Neutral",group = "drive")
 public class RedLoadingNeutral extends LinearOpMode {
     int index;

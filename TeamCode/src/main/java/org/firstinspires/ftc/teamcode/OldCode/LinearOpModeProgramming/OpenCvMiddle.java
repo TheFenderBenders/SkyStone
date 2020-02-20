@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.OldCode.LinearOpModeProgramming;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import org.firstinspires.ftc.teamcode.drive.mecanum.SampleMecanumDriveBase;
@@ -37,6 +38,8 @@ import static org.opencv.imgproc.Imgproc.rectangle;
 /*
  * This is a simple routine to test translational drive capabilities.
  */
+@Disabled
+
 @Autonomous(name= "YEET FAST",group = "drive")
 public class OpenCvMiddle extends LinearOpMode {
 

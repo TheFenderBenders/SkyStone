@@ -57,7 +57,9 @@ import org.firstinspires.ftc.teamcode.OldCode.DotStarBridgedLED;
 public class SQT_Tele extends OpMode
 {
     DotStarBridgedLED blinkinLedDriver;
+    Servo leftFoundation, rightFoundation;
 
+    double leftSSPosition,rightSSPosition;
     private ElapsedTime runtime = new ElapsedTime();
     private DcMotor leftFront = null;
     private DcMotor rightFront = null;
@@ -69,6 +71,7 @@ public class SQT_Tele extends OpMode
     DcMotor slide = null;
     Servo swing = null;
     Servo capping = null;
+    Servo leftSkystoneArm, rightSkystoneArm;
     ElapsedTime slideTimer = new ElapsedTime();
     ElapsedTime internalSlideTimer = new ElapsedTime();
 
@@ -80,9 +83,15 @@ public class SQT_Tele extends OpMode
     int lit = 0;
     @Override
     public void init() {
+        leftFoundation = hardwareMap.get(Servo.class, "l_found");
+        rightFoundation = hardwareMap.get(Servo.class, "r_found");
+
         //blinkinLedDriver = hardwareMap.get(DotStarBridgedLED.class, "driver");
 
         telemetry.addData("Status", "Initialized");
+
+        leftSkystoneArm = hardwareMap.get(Servo.class, "left_sa");
+        rightSkystoneArm = hardwareMap.get(Servo.class, "right_sa");
 
         leftIntake = hardwareMap.get(DcMotor.class, "lIntake");
         rightIntake = hardwareMap.get(DcMotor.class, "rIntake");
@@ -133,7 +142,8 @@ public class SQT_Tele extends OpMode
         internalSlideTimer.reset();
 
 
-
+        leftSSPosition = leftSkystoneArm.getPosition();
+        rightSSPosition = rightSkystoneArm.getPosition();
     }
 
     /*
@@ -141,6 +151,44 @@ public class SQT_Tele extends OpMode
      */
     @Override
     public void loop() {
+
+
+        if(gamepad2.a){
+            leftFoundation.setPosition(0.1);
+            rightFoundation.setPosition(0.85);
+        }
+        else if (gamepad2.y){
+            leftFoundation.setPosition(0.6);
+            rightFoundation.setPosition(0.3);
+        }
+
+
+
+        if(gamepad2.dpad_up){
+            capping.setPosition(0.6);
+        }
+        else if (gamepad2.dpad_down){
+            capping.setPosition(0.1);
+        }
+
+        leftSkystoneArm.setPosition(leftSSPosition);
+        rightSkystoneArm.setPosition(rightSSPosition);
+
+        if(gamepad1.x){
+            leftSSPosition += 0.001;
+        }
+        if (gamepad1.b){
+            leftSSPosition -= 0.001;
+        }
+
+        if(gamepad1.dpad_left){
+            rightSSPosition +=0.001;
+        }
+
+        if (gamepad1.dpad_right){
+            rightSSPosition -= 0.001;
+
+        }
 /*
         //blinkinLedDriver.pixels[lit] = new DotStarBridgedLED.Pixel(255,150,0);
         if(lit<blinkinLedDriver.pixels.length){
@@ -180,6 +228,9 @@ public class SQT_Tele extends OpMode
 
 
 
+      //ishan on intake
+      //me on grabber
+
       if(gamepad1.right_trigger!=0){
             leftIntake.setPower(-gamepad1.right_trigger);
             rightIntake.setPower(gamepad1.right_trigger);
@@ -194,37 +245,17 @@ public class SQT_Tele extends OpMode
         }
 
 
-        if(gamepad2.dpad_up){
-            capping.setPosition(0.6);
-        }
-        else if(gamepad2.dpad_down){
-            capping.setPosition(0.2);
-        }
+
+
+
+        telemetry.addData("Grabber Position", grabber.getPosition());
+        telemetry.update();
 
 
 
 
-        if(gamepad2.a){
 
-            if(slideTimer.milliseconds()>1000) {
-                internalSlideTimer.reset();
-                slide.setPower(0.35);
-                slideMovement = true;
-            }
-        }
-        if(slideMovement){
-            if(slideTimer.milliseconds()>500){
-                slide.setPower(0);
-                if(swing.getPosition()==0){
-                    swing.setPosition(0.666666);
-                }
-                else{
-                    swing.setPosition(0);
-                }
-                slideMovement = false;
-                slideTimer.reset();
-            }
-        }
+
 
 
 

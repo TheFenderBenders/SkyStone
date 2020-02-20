@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.SQT_Programming;
 
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import org.firstinspires.ftc.teamcode.OldCode.LinearOpModeProgramming.BlueLoadingWall;
@@ -22,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Autonomous
+@Disabled
 public class First_Auto_CV_Test extends LinearOpMode {
 
     pointArray mainPoints = new pointArray();

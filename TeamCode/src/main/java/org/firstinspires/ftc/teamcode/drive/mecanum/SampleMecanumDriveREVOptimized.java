@@ -86,7 +86,18 @@ public class SampleMecanumDriveREVOptimized extends SampleMecanumDriveBase {
         //setLocalizer(new MecanumLocalizer(this, true));
         ///setLocalizer(new MainMecanumLocalizer(this, true));
         // for instance, setLocalizer(new ThreeTrackingWheelLocalizer(...));
+        ArrayList<Pose2d> wheelPositions = new ArrayList<>(100);
+        wheelPositions.add(new Pose2d(0,0,0));
+        wheelPositions.add(new Pose2d(0,0,0));
+        wheelPositions.add(new Pose2d(0,0,0));
 
+        setLocalizer(new ThreeTrackingWheelLocalizer(wheelPositions) {
+            @NotNull
+            @Override
+            public List<Double> getWheelPositions() {
+                return null;
+            }
+        });
     }
 
     @Override

@@ -29,19 +29,10 @@ import org.openftc.easyopencv.OpenCvPipeline;
 import java.util.List;
 import java.util.ArrayList;
 
+import static java.lang.Thread.sleep;
 
 public class TFB_Auto extends TFB_LinearOpMode {
-/**************** READ ME *************
-    This autonomous program uses 2 unique features:
-    First, it uses inheritance. This means the whole of the program is in TFB_LinearOpMode,
-    TFB_Auto, and another program, named  [ALLIANCE]_[STARTING SIDE]_[(OPTIONAL)PARKING_POSITION]
-    Most of the code, however, is in TFB_Auto.
-
-    It also uses RoadRunnerAdditions, a class created to make programming roadrunner easier.
-
-
-
- */
+   protected RoadRunnerAdditions roadrunner = new RoadRunnerAdditions();
 
 //**********     OPEN CV     **********
     protected OpenCvCamera phoneCam;
@@ -55,7 +46,7 @@ public class TFB_Auto extends TFB_LinearOpMode {
     protected double[] data1;
     protected double[] data2;
 
-//**********     INHERITANCE     **********
+//**********     INHERITANCE/STATES     **********
 protected enum DIRECTION {
     LEFT, RIGHT
 }
@@ -86,9 +77,6 @@ protected enum DIRECTION {
     protected SKYSTONE_STATES skystone_state;
     protected FOUNDATION_STATES foundation_state;
 
-    protected int threadStatus; // 0 means thread not started, 1 means thread running, 2 thread done
-
-
 
     protected enum SKYSTONE_STATES {
         FIRST_SKYSTONE,
@@ -118,23 +106,76 @@ protected enum DIRECTION {
         MOVE_TILL_BRIDGE
     }
 
-//**********     POINTS     **********
-    protected pointArray mainPoints = new pointArray();
-    protected String StoneOne = "S1";
-    protected String StoneTwo = "S2";
-    protected String StoneThree = "S3";
-    protected String StoneFour = "S4";
-    protected String StoneFive = "S5";
-    protected String StoneSix = "S6";
-    protected String DropoffPoint = "Dropoff Point";
-    protected String PlacementPoint = "Placement Point";
-    protected String latchOff = "latch";
-    protected String FoundationPosition = "Foundation Position";
-    protected String LeftFoundation = "lf";
-
 //**********     MISC.     **********
-    protected RoadRunnerAdditions roadrunner = new RoadRunnerAdditions();
     protected boolean foundBridge = false;
+   protected pointArray mainPoints = new pointArray();
+
+   enum Points{
+       StoneOne,
+       StoneTwo,
+       StoneThree,
+       StoneFour,
+       StoneFive,
+       StoneSix,
+       BackupOne,
+       BackupTwo,
+       BackupThree,
+       BackupFour,
+       BackupFive,
+       BackupSix,
+       DropoffPoint,
+       PlacementPoint,
+       LatchOff
+   }
+
+    String StoneOne = "S1";
+    String StoneTwo = "S2";
+    String StoneThree = "S3";
+    String StoneFour = "S4";
+    String StoneFive = "S5";
+    String StoneSix = "S6";
+
+    protected String BackupOne = "B1";
+    protected String BackupTwo = "B2";
+    protected String BackupThree = "B3";
+    protected String BackupFour = "B4";
+    protected String BackupFive = "B5";
+    protected String BackupSix = "B6";
+
+   protected String DropoffPoint = "Dropoff Point";
+   protected String PlacementPoint = "Placement Point";
+   protected String LatchOff = "latch";
+
+
+
+
+
+
+
+
+   double LEFT_SKYSTONE_ARM_DOWN = 0.15;
+   double LEFT_SKYSTONE_ARM_UP = 0.47;
+
+   double RIGHT_SKYSTONE_ARM_UP = 0;
+   double RIGHT_SKYSTONE_ARM_DOWN = 0.333;
+
+   double LEFT_SKYSTONE_HAND_FLAT = 0.425;
+   double LEFT_SKYSTONE_HAND_BLOCK = 0.04;
+   double LEFT_SKYSTONE_HAND_OPEN = 0.175;
+   double LEFT_SKYSTONE_HAND_CLOSED = 0;
+
+    double RIGHT_SKYSTONE_HAND_FLAT = 0.425;
+    double RIGHT_SKYSTONE_HAND_BLOCK = 0.35;
+    double RIGHT_SKYSTONE_HAND_OPEN = 0.225;
+    double RIGHT_SKYSTONE_HAND_CLOSED = 0.4;
+
+
+
+
+
+    protected Thread t1, t2;
+
+
 
     @Override
     void initMethod()  {
@@ -148,28 +189,35 @@ protected enum DIRECTION {
         skystone_state = SKYSTONE_STATES.FIRST_SKYSTONE;
         roadrunner.initRobot(hardwareMap);
         if(alliance == ALLIANCE.BLUE) {
-            one = new Point(200, 350);
-            two = new Point(325, 350);
+            one = new Point(200, 375);
+            two = new Point(325, 375);
         }
         else{
-            two = new Point(150, 350);
-            one = new Point(275, 350);
+            two = new Point(150, 375);
+            one = new Point(275, 375);
         }
         if(alliance == ALLIANCE.RED){
             roadrunner.flipSides();
         }
-        mainPoints.add("S1", -8,30);
-        mainPoints.add("S2", 0,30);
-        mainPoints.add("S3", 8,30);
-        mainPoints.add("S4", 16,30);
-        mainPoints.add("S5", 24,30);
-        mainPoints.add("S6", 32,30);
-        mainPoints.add("Dropoff Point", -86,24);
-        mainPoints.add("Placement Point", -86,34);//30 is norm
-        mainPoints.add("Foundation Position",-92,0);
+        mainPoints.add("S1", -8,29);
+        mainPoints.add("S2", 0,29);
+        mainPoints.add("S3", 8,29);
+        mainPoints.add("S4", 16,29);
+        mainPoints.add("S5", 24,29);
+        mainPoints.add("S6", 32,29);
+
+        mainPoints.add("B1", -8,22);
+        mainPoints.add("B2", 0,22);
+        mainPoints.add("B3", 8,22);
+        mainPoints.add("B4", 16,22);
+        mainPoints.add("B5", 24,22);
+        mainPoints.add("B6", 32,22);
+
+        mainPoints.add("Dropoff Point", -86,22);
+        mainPoints.add("Placement Point", -86,32);
+        mainPoints.add("Foundation Position",-80,-10);
         mainPoints.add("Wall Park", -15,0);
         mainPoints.add("latch", -86,40);
-        mainPoints.add("lf", -92,24);
     }
 
     @Override
@@ -183,7 +231,6 @@ protected enum DIRECTION {
         phoneCam.startStreaming(640, 480, OpenCvCameraRotation.UPSIDE_DOWN);
 
         waitForStart();
-
         phoneCam.stopStreaming();
         while (opModeIsActive()) {
 
@@ -192,78 +239,75 @@ protected enum DIRECTION {
 
                     case FIRST_SKYSTONE:
                         if(alliance == ALLIANCE.BLUE) {
-                            rightSkystoneHand.setPosition(0.25);
+                            rightSkystoneHand.setPosition(RIGHT_SKYSTONE_HAND_OPEN);
                         }
                         else{
-                            leftSkystoneHand.setPosition(0.18);
+                            leftSkystoneHand.setPosition(LEFT_SKYSTONE_HAND_OPEN);
                         }
                         skystone_state = SKYSTONE_STATES.DROPOFF_FIRST_SKYSTONE;
-                        roadrunner.move(mainPoints.get(StoneTwo));
+                        roadrunner.move(new Vector2d[]{mainPoints.get(StoneTwo)});
                         switch (skystone1){
                             case 0:
-                                roadrunner.move(mainPoints.get(StoneOne));
+                                roadrunner.move(new Vector2d[]{mainPoints.get(StoneOne)});
                                 PickUp();
-                                roadrunner.move(mainPoints.getBehind(StoneOne));
+                                roadrunner.move(new Vector2d[]{mainPoints.get(BackupOne)});
                                 break;
                             case 1:
-                                roadrunner.move(mainPoints.get(StoneTwo));
                                 PickUp();
-                                roadrunner.move(mainPoints.getBehind(StoneTwo));
+                                roadrunner.move(new Vector2d[]{mainPoints.get(BackupTwo)});
                                 break;
                             case 2:
-                                roadrunner.move(mainPoints.get(StoneThree));
+                                roadrunner.move(new Vector2d[]{mainPoints.get(StoneThree)});
                                 PickUp();
-                                roadrunner.move(mainPoints.getBehind(StoneThree));
+                                roadrunner.move(new Vector2d[]{mainPoints.get(BackupThree)});
                                 break;
 
 
                         }
                         break;
                     case DROPOFF_FIRST_SKYSTONE:
-                        roadrunner.move(mainPoints.get(DropoffPoint));
-                        roadrunner.move(mainPoints.get(PlacementPoint));
+                        roadrunner.move(new Vector2d[]{mainPoints.get(DropoffPoint)});
+                        roadrunner.move(new Vector2d[]{mainPoints.get(PlacementPoint)});
                         DropOff();
                         skystone_state = SKYSTONE_STATES.RESET_FOR_SECOND_SKYSTONE;
 
                         break;
                     case RESET_FOR_SECOND_SKYSTONE:
-                        roadrunner.move(mainPoints.get(DropoffPoint));
-                        if(alliance == ALLIANCE.BLUE) {
-                            rightSkystoneHand.setPosition(0.25);
-                        }
-                        else{
-                            leftSkystoneHand.setPosition(0.18);
-                        }
+                        roadrunner.move(new Vector2d[]{mainPoints.get(DropoffPoint)});
                         skystone_state = SKYSTONE_STATES.SECOND_SKYSTONE;
                         break;
                     case SECOND_SKYSTONE:
                         skystone_state = SKYSTONE_STATES.DROPOFF_SECOND_SKYSTONE;
+
                         switch (skystone2){
                             case 3:
-                                roadrunner.move(new Vector2d[]{
-                                        mainPoints.getBehind(StoneFour),
-                                        mainPoints.get(StoneFour)
-                                });
+                                roadrunner.move(new Vector2d[]{mainPoints.get(BackupFour)});
+                                if(alliance==ALLIANCE.BLUE)rightSkystoneHand.setPosition(RIGHT_SKYSTONE_HAND_OPEN);
+                                else leftSkystoneHand.setPosition(LEFT_SKYSTONE_HAND_OPEN);
+                                sleep(500);
+                                roadrunner.move(new Vector2d[]{mainPoints.get(StoneFour)});
                                 PickUp();
-                                roadrunner.move(mainPoints.getBehind(StoneFour));
+                                roadrunner.move(new Vector2d[]{mainPoints.get(BackupFour)});
 
 
                                 break;
                             case 4:
-                                roadrunner.move(new Vector2d[]{
-                                        mainPoints.getBehind(StoneFive), mainPoints.get(StoneFive)
-                                });
+                                roadrunner.move(new Vector2d[]{mainPoints.get(BackupFive)});
+                                if(alliance==ALLIANCE.BLUE)rightSkystoneHand.setPosition(RIGHT_SKYSTONE_HAND_OPEN);
+                                else leftSkystoneHand.setPosition(LEFT_SKYSTONE_HAND_OPEN);
+                                roadrunner.move(new Vector2d[]{mainPoints.get(StoneFive)});
                                 PickUp();
-                                roadrunner.move(mainPoints.getBehind(StoneFive));
+                                roadrunner.move(new Vector2d[]{mainPoints.get(BackupFive)});
 
 
                                 break;
                             case 5:
-                                roadrunner.move(new Vector2d[]{
-                                        mainPoints.getBehind(StoneSix), mainPoints.get(StoneSix)
-                                });
+                                roadrunner.move(new Vector2d[]{mainPoints.get(BackupSix)});
+                                if(alliance==ALLIANCE.BLUE)rightSkystoneHand.setPosition(RIGHT_SKYSTONE_HAND_OPEN);
+                                else leftSkystoneHand.setPosition(LEFT_SKYSTONE_HAND_OPEN);
+                                roadrunner.move(new Vector2d[]{mainPoints.get(StoneSix)});
                                 PickUp();
-                                roadrunner.move(mainPoints.getBehind(StoneSix));
+                                roadrunner.move(new Vector2d[]{mainPoints.get(BackupSix)});
                                 break;
                         }
                         break;
@@ -272,19 +316,13 @@ protected enum DIRECTION {
                         Vector2d newPlacement = new Vector2d(mainPoints.get(PlacementPoint).getX()+12,mainPoints.get(PlacementPoint).getY());
                         roadrunner.move(new Vector2d[]{newDropoff,newPlacement});
                         DropOff();
+                        newDropoff = new Vector2d(mainPoints.get(DropoffPoint).getX()+12,mainPoints.get(DropoffPoint).getY()+4);
                         roadrunner.move(new Vector2d[]{newDropoff});
                         skystone_state = SKYSTONE_STATES.PULL_FOUNDATION;
                         break;
                     case PULL_FOUNDATION:
-                        Vector2d latchDropoff = new Vector2d(mainPoints.get(DropoffPoint).getX()+12,mainPoints.get(DropoffPoint).getY()+4);
-                        Vector2d latchPlacement = new Vector2d(mainPoints.get(PlacementPoint).getX()+12,mainPoints.get(PlacementPoint).getY()+4);
-
-                        if(alliance == ALLIANCE.BLUE) {
-                            rightSkystoneHand.setPosition(0.25);
-                        }
-                        else{
-                            leftSkystoneHand.setPosition(0.18);
-                        }
+                        Vector2d latchDropoff = new Vector2d(mainPoints.get(DropoffPoint).getX()+12,mainPoints.get(DropoffPoint).getY());
+                        Vector2d latchPlacement = new Vector2d(mainPoints.get(PlacementPoint).getX()+12,mainPoints.get(PlacementPoint).getY());
 
                         if(alliance == ALLIANCE.BLUE) {
                             roadrunner.turn(-90);
@@ -292,19 +330,20 @@ protected enum DIRECTION {
                         else{
                             roadrunner.turn(-90);
                         }
-                        roadrunner.strafeLeft(-12);
-                        roadrunner.forward(-16);
+
                         foundationCaptureServoLeft.setPosition(0.3);
                         foundationCaptureServoRight.setPosition(0.7);
 
-                        roadrunner.move(latchPlacement);
+                        roadrunner.move(new Vector2d[]{latchPlacement});
                         foundationCaptureServoLeft.setPosition(0.1);
                         foundationCaptureServoRight.setPosition(0.85);
                         sleep(500);
-                        roadrunner.move(mainPoints.get(FoundationPosition));
-                        foundationCaptureServoLeft.setPosition(0.6);
+                        roadrunner.move(new Vector2d[]{mainPoints.get("Foundation Position")});
+
+                        foundationCaptureServoLeft.setPosition(0.61);
                         foundationCaptureServoRight.setPosition(0.3);
                         sleep(500);
+
 
                        // roadrunner.move(new Vector2d[]{mainPoints.get("Wall Park")});
                         skystone_state = SKYSTONE_STATES.PARK;
@@ -319,21 +358,6 @@ protected enum DIRECTION {
 
         }
     }
-
-
-    class ArmResetter implements Runnable {
-        public void run() {
-            if (alliance == ALLIANCE.BLUE) {
-                leftSkystoneHand.setPosition(0);
-                sleep(250);
-                leftSkystoneArm.setPosition(0);
-            }
-            else {
-            }
-        }
-    }
-
-
 
 
     void moveToStonesThroughBridge() {
@@ -508,26 +532,7 @@ protected enum DIRECTION {
                 return null;
             }
         }
-        Vector2d getBehind(String getter){
-            if(names.contains(getter)) {
-                double x  = points.get(names.indexOf(getter)).getX();
-                double y  = points.get(names.indexOf(getter)).getY();
-                return (new Vector2d(x,y-6));
-                //return (new Vector2d(x,y-10));
 
-            }
-            else{
-                telemetry.addLine("ERROR! The Point You Requested Does Not Exist");
-                telemetry.update();
-                sleep(5000);
-                stop();
-                return null;
-            }
-
-
-
-
-        }
         void remove(String name){
             int position = names.indexOf(name);
             names.add(position, "");
@@ -536,37 +541,42 @@ protected enum DIRECTION {
 
     void PickUp(){
         if (alliance == ALLIANCE.BLUE) {
-            rightSkystoneArm.setPosition(0.33333);
+            rightSkystoneHand.setPosition(RIGHT_SKYSTONE_HAND_OPEN);
+            rightSkystoneArm.setPosition(RIGHT_SKYSTONE_ARM_DOWN);
             sleep(500);
-            rightSkystoneHand.setPosition(0.4);
+            rightSkystoneHand.setPosition(RIGHT_SKYSTONE_HAND_BLOCK);
             sleep(500);
-            rightSkystoneArm.setPosition(0);
-
+            rightSkystoneArm.setPosition(RIGHT_SKYSTONE_ARM_UP);
         }
         else {
-            leftSkystoneArm.setPosition(0);
+            leftSkystoneHand.setPosition(LEFT_SKYSTONE_HAND_OPEN);
+            leftSkystoneArm.setPosition(LEFT_SKYSTONE_ARM_DOWN);
             sleep(500);
-            leftSkystoneHand.setPosition(0);
+            leftSkystoneHand.setPosition(LEFT_SKYSTONE_HAND_BLOCK);
             sleep(500);
-            leftSkystoneArm.setPosition(0.4);
+            leftSkystoneArm.setPosition(LEFT_SKYSTONE_ARM_UP);
         }
     }
 
     void DropOff(){
         if (alliance == ALLIANCE.BLUE) {
-            rightSkystoneArm.setPosition(0.33333);
+            rightSkystoneArm.setPosition(RIGHT_SKYSTONE_ARM_DOWN);
             sleep(250);
-            rightSkystoneHand.setPosition(0);
+            rightSkystoneHand.setPosition(RIGHT_SKYSTONE_HAND_OPEN);
             sleep(500);
-            rightSkystoneArm.setPosition(0);
+            rightSkystoneArm.setPosition(RIGHT_SKYSTONE_ARM_UP);
+            sleep(250);
+            rightSkystoneHand.setPosition(RIGHT_SKYSTONE_HAND_CLOSED);
 
         }
         else {
-            leftSkystoneArm.setPosition(0);
+            leftSkystoneArm.setPosition(LEFT_SKYSTONE_ARM_DOWN);
+            sleep(250);
+            leftSkystoneHand.setPosition(LEFT_SKYSTONE_HAND_OPEN);
             sleep(500);
-            leftSkystoneHand.setPosition(0.4);
-            sleep(500);
-            leftSkystoneArm.setPosition(0.4);
+            leftSkystoneArm.setPosition(LEFT_SKYSTONE_ARM_UP);
+            sleep(250);
+            leftSkystoneHand.setPosition(LEFT_SKYSTONE_HAND_CLOSED);
         }
     }
 

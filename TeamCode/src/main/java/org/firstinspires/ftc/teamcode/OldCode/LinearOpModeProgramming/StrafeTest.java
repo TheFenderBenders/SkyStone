@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.OldCode.LinearOpModeProgramming;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -11,6 +12,7 @@ import org.firstinspires.ftc.teamcode.drive.mecanum.SampleMecanumDriveREVOptimiz
 /*
  * This is a simple routine to test translational drive capabilities.
  */
+@Disabled
 @Autonomous(name= "MoveTest2",group = "drive")
 public class StrafeTest extends LinearOpMode {
 

@@ -12,6 +12,7 @@ import org.openftc.revextensions2.ExpansionHubMotor;
 
 @TeleOp(name="QT Tele", group="Iterative Opmode")
 
+@Disabled
 public class QT_TeleOp_Iterative extends OpMode
 {
     private ElapsedTime runtime = new ElapsedTime();

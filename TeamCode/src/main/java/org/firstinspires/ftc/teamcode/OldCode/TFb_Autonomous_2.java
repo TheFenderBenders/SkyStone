@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.OldCode;
 
 import com.acmerobotics.roadrunner.geometry.Vector2d;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.firstinspires.ftc.teamcode.SQT_Programming.TFB_OpMode;
 import org.firstinspires.ftc.teamcode.drive.mecanum.SampleMecanumDriveBase;
@@ -22,6 +23,7 @@ import java.util.List;
 
 import static java.lang.Thread.sleep;
 
+@Disabled
 public class TFb_Autonomous_2 extends TFB_OpMode {
 
     protected OpenCvCamera phoneCam;

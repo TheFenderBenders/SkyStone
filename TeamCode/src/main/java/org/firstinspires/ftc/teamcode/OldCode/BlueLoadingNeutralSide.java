@@ -1,11 +1,14 @@
 package org.firstinspires.ftc.teamcode.OldCode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.opencv.core.Point;
 
 import static java.lang.Thread.sleep;
 
+
+@Disabled
 @Autonomous(name="Blue-Loading-Neutral_side", group ="TFB Auto")
 
 public class BlueLoadingNeutralSide extends TFB_Autonomous {

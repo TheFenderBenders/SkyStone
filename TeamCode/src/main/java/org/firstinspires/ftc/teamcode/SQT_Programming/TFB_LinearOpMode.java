@@ -36,10 +36,8 @@ for larm, down is 0.4 and up is 0.8
         //colorSensor = hardwareMap.get(ColorSensor.class, "color_sensor");
         if(redSide) {
             leftSkystoneArm = hardwareMap.get(Servo.class, "left_sa");
-            leftSkystoneArm.setPosition(0.4);
 
             leftSkystoneHand = hardwareMap.get(Servo.class, "left_sh");
-            leftSkystoneHand.setPosition(0.05);
         }
         else {
 

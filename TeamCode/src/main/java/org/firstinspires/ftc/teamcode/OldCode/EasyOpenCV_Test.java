@@ -70,6 +70,7 @@ import java.util.List;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
+@Disabled
 @TeleOp(name="EasyOpenCV_Test", group="Linear Opmode")
 public class EasyOpenCV_Test extends LinearOpMode {
 

@@ -5,6 +5,7 @@ import com.acmerobotics.roadrunner.geometry.Vector2d;
 
 import org.firstinspires.ftc.teamcode.OldCode.Vector2Weighted;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -32,6 +33,8 @@ import static java.lang.Thread.sleep;
 /*
  * This is a simple routine to test translational drive capabilities.
  */
+@Disabled
+
 @Autonomous(name= "Blue Loading Wall",group = "drive")
 public class BlueLoadingWall extends LinearOpMode {
     int index;

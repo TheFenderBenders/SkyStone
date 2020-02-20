@@ -2,10 +2,11 @@ package org.firstinspires.ftc.teamcode.SQT_Programming;
 
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 
 import org.firstinspires.ftc.teamcode.util.RoadRunnerAdditions;
-
+@Disabled
 @Autonomous
 public class Distance_Test extends LinearOpMode {
     RoadRunnerAdditions roadrunner = new RoadRunnerAdditions();
